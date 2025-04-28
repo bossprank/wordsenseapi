@@ -1,0 +1,2 @@
+# wordsenseapi
+Wordsense API
