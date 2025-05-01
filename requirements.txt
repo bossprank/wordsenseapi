@@ -1,5 +1,21 @@
-pip
-autopep8
+# Core Flask App & Dependencies
 Flask==3.0.3
-gunicorn==22.0.0
-Werkzeug==3.0.6
+Werkzeug==3.0.6 # Flask dependency, pinned by user
+
+# Google Cloud / AI
+google-cloud-firestore==2.17.0
+google-generativeai==0.7.2
+openai==1.37.0
+httpx==0.27.0 # *** Added HTTP client library ***
+
+# Utilities
+python-dotenv==1.0.1
+pydantic==2.8.2
+
+# Development Tools
+pip # Usually managed separately, but can be listed
+autopep8 # User added formatter
+flake8==7.1.0 # Linter
+
+# Deployment (Optional)
+gunicorn==22.0.0 # WSGI Server
