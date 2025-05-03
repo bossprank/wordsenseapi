@@ -1,5 +1,5 @@
 # Core Flask App & Dependencies
-Flask==3.0.3
+Flask[async]==3.0.3
 Werkzeug==3.0.6 # Flask dependency, pinned by user
 
 # Google Cloud / AI

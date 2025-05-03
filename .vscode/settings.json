@@ -1,4 +1,28 @@
 {
     "IDX.aI.enableInlineCompletion": true,
-    "IDX.aI.enableCodebaseIndexing": true
+    "IDX.aI.enableCodebaseIndexing": true,
+    
+"macros.list": {
+    "selectScrollPaste": [
+        // 1. Select all content in the current file
+        "editor.action.selectAll", 
+        // 2. Move cursor to the end, which usually scrolls the view to the bottom
+        "cursorBottom", 
+        // Alternatively, if cursorBottom doesn't reliably scroll, try:
+        // "editor.action.revealLastLine", 
+        // 3. Pause for 3000 milliseconds (3 seconds)
+        {
+            "command": "$delay",
+            "args": {
+                "delay": 3000 
+            }
+        },
+        // 4. Paste the content from the clipboard
+        "editor.action.clipboardPasteAction" 
+    ]
+    // Add other macros here if you have them
 }
+
+}
+
+ 
