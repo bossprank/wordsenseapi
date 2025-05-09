@@ -1,0 +1,700 @@
+/* static/style.css */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    margin: 20px;
+    line-height: 1.6;
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+h1, h2 {
+    color: #343a40;
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    table-layout: fixed; /* Helps with consistent column widths initially */
+    word-wrap: break-word; /* Allow long words to break */
+}
+
+/* Style for the scrollable container */
+#category-table-container {
+    overflow-x: auto;
+    width: 100%;
+    margin-bottom: 20px; /* Add some space below the table */
+}
+
+
+th, td {
+    border: 1px solid #dee2e6;
+    padding: 6px 15px; /* Reduced vertical padding */
+    text-align: left;
+    vertical-align: top; /* Align content top */
+    white-space: pre-wrap; /* Allow wrapping within cells but preserve whitespace */
+    min-width: 120px; /* Set a minimum width for columns */
+}
+
+th {
+    background-color: #e9ecef;
+    font-weight: bold;
+}
+
+/* Hide navbar and sidebar on the index page */
+.index-page .main-header.navbar,
+.index-page .main-sidebar {
+    display: none;
+}
+
+/* --- Form Section Improvements --- */
+
+.form-section {
+    display: none; /* Initially hidden */
+    border: 1px solid #dee2e6;
+    padding: 25px; /* Increased padding */
+    margin-top: 25px; /* Increased margin */
+    background-color: #fff;
+    border-radius: 8px; /* Slightly more rounded */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Slightly stronger shadow */
+}
+
+.form-section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+.form-section label {
+    display: block;
+    margin-bottom: 8px;
+    color: #495057;
+    font-weight: 600; /* Slightly bolder labels */
+}
+
+.form-section input[type="text"],
+.form-section select,
+.form-section textarea {
+    width: calc(100% - 22px); /* Account for padding and border */
+    margin-bottom: 18px; /* Increased spacing */
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box; /* Include padding and border in element's total width */
+}
+
+.form-section select {
+     width: 100%; /* Select full width */
+     height: 40px; /* Match input height */
+}
+
+
+.form-section fieldset { /* Use fieldset for grouping */
+    border: 1px solid #ced4da;
+    padding: 15px;
+    margin-bottom: 18px;
+    border-radius: 4px;
+}
+
+.form-section legend { /* Style the legend */
+    font-weight: 600;
+    padding: 0 5px;
+    color: #495057;
+}
+
+
+.form-section .language-dict {
+    margin-left: 0;
+    margin-bottom: 10px;
+    padding-top: 5px;
+}
+
+.form-section .language-dict label {
+    display: inline-block;
+    width: 40px; /* Fixed width for lang code */
+    margin-right: 5px;
+    margin-bottom: 8px;
+    font-weight: normal;
+    text-align: right;
+    vertical-align: middle;
+}
+
+.form-section .language-dict input {
+    width: calc(100% - 60px); /* Adjust based on label width */
+    display: inline-block;
+    margin-bottom: 8px;
+    vertical-align: middle;
+}
+
+.form-section button[type="button"] {
+    background-color: #e9ecef;
+    color: #495057;
+    border: 1px solid #ced4da;
+    margin-top: 5px;
+    margin-bottom: 10px; /* Reduced margin below add button */
+    font-size: 12px;
+    padding: 5px 10px;
+}
+.form-section button[type="button"]:hover {
+     background-color: #dee2e6;
+}
+
+
+.form-section small {
+    display: block;
+    margin-top: -15px; /* Pull up slightly */
+    margin-bottom: 15px;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.form-section .checkbox-group label {
+    display: inline-block;
+    margin-right: 15px;
+    font-weight: normal;
+}
+.form-section .checkbox-group input[type="checkbox"] {
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+
+.form-actions {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+    text-align: right;
+}
+
+
+.error {
+    color: #721c24; /* Darker red */
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 12px 15px; /* Increased padding */
+    border-radius: 4px;
+    margin-top: 15px;
+    font-weight: bold;
+    text-align: left; /* Ensure text aligns left */
+}
+
+/* --- Breadcrumb Styles --- */
+.breadcrumb {
+    padding: 8px 15px;
+    margin-bottom: 20px;
+    list-style: none;
+    background-color: #e9ecef;
+    border-radius: 4px;
+}
+.breadcrumb-item {
+    display: inline-block;
+}
+.breadcrumb-item + .breadcrumb-item::before {
+    display: inline-block;
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+    color: #6c757d;
+    content: "/";
+}
+.breadcrumb-item.active {
+    color: #6c757d;
+}
+
+
+/* --- Dark Mode Styles --- */
+@media (prefers-color-scheme: dark) {
+    /* Apply base dark theme to body and ensure high contrast */
+    body {
+        background-color: #000000 !important; /* Force black background */
+        color: #ffffff !important; /* Force white text */
+    }
+    /* Ensure all direct children containers also get dark background if needed */
+    body > div {
+         background-color: inherit; /* Inherit body background unless overridden */
+         color: inherit;
+    }
+
+
+    h1, h2 {
+        color: #ffffff; /* White headings */
+    }
+
+    a {
+        color: #90caf9; /* Adjust link color for black background */
+    }
+
+    table {
+        background-color: #111 !important; /* Even darker grey for table */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        color: #ffffff !important; /* White table text */
+        border-color: #333 !important; /* Ensure table border is dark */
+    }
+
+     /* Ensure scroll container has dark background */
+    #category-table-container {
+        background-color: #111 !important; /* Match table background */
+        border: 1px solid #444 !important; /* Slightly more visible border */
+        border-radius: 4px;
+    }
+
+
+    th, td {
+        border: 1px solid #333 !important; /* Darker borders */
+        min-width: 120px; /* Ensure min-width applies in dark mode too */
+        color: #ffffff !important; /* Ensure cell text is white */
+        background-color: transparent !important; /* Ensure cells inherit dark bg */
+    }
+
+    th {
+        background-color: #2a2a2a !important; /* Darker header */
+        color: #ffffff !important; /* White header text */
+    }
+
+    tbody tr:nth-child(odd) {
+        background-color: #111 !important; /* Match table background */
+    }
+     tbody tr:nth-child(even) {
+        background-color: #222 !important; /* Slightly different shade for even rows */
+    }
+
+
+    tbody tr:hover {
+        background-color: #333 !important; /* Darker hover */
+    }
+
+    .filter-section, .actions-section {
+        background-color: #111 !important; /* Dark background for sections */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        color: #ffffff !important; /* White text in these sections */
+        border: 1px solid #444 !important; /* Add subtle border */
+    }
+
+    label {
+         color: #ffffff !important; /* White labels */
+    }
+
+    input[type="text"], input[type="search"], select {
+        background-color: #2a2a2a !important; /* Dark input background */
+        border: 1px solid #555 !important; /* Darker input border */
+        color: #ffffff !important; /* White input text */
+    }
+     input[type="text"]::placeholder,
+     input[type="search"]::placeholder,
+     textarea::placeholder { /* Add textarea placeholder */
+         color: #aaa !important; /* Lighter placeholder text */
+     }
+
+
+    /* Dark Mode Form Styles */
+    .form-section {
+        background-color: #111 !important; /* Dark background for form */
+        border: 1px solid #444 !important; /* Darker border */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        color: #ffffff !important; /* White text within form */
+    }
+
+    .form-section h2 {
+        color: #ffffff !important; /* White form heading */
+        border-bottom: 1px solid #444 !important; /* Darker border */
+    }
+
+    .form-section label {
+        color: #ffffff !important; /* White form labels */
+    }
+
+    .form-section input[type="text"],
+    .form-section select,
+    .form-section textarea {
+        background-color: #2a2a2a !important; /* Dark input background */
+        border: 1px solid #555 !important; /* Darker input border */
+        color: #ffffff !important; /* White input text */
+    }
+     .form-section input[type="text"]::placeholder,
+     .form-section textarea::placeholder { /* Add textarea placeholder */
+         color: #aaa !important;
+     }
+
+
+    .form-section fieldset {
+        border: 1px solid #555 !important; /* Darker fieldset border */
+        background-color: transparent !important; /* Ensure fieldset bg is transparent */
+    }
+
+    .form-section legend {
+        color: #ffffff !important; /* White legend text */
+    }
+
+    .form-section button[type="button"] { /* Add language buttons */
+        background-color: #3a3a3a !important;
+        color: #ffffff !important;
+        border: 1px solid #555 !important;
+    }
+    .form-section button[type="button"]:hover {
+         background-color: #4a4a4a !important;
+    }
+
+    .form-section small {
+        color: #bbb !important; /* Lighter small text */
+    }
+
+     .form-section .checkbox-group label {
+         color: #ffffff !important; /* White checkbox labels */
+     }
+     .form-section .checkbox-group input[type="checkbox"] {
+         accent-color: #90caf9 !important; /* Style checkbox color */
+         filter: brightness(0.8) saturate(120%); /* Adjust checkbox appearance */
+     }
+
+
+    .form-actions {
+        border-top: 1px solid #444 !important; /* Darker border */
+        background-color: transparent !important; /* Ensure actions bg is transparent */
+    }
+
+    /* Dark Mode Button Adjustments - Ensure contrast */
+    button { /* General dark mode button text */
+        color: #ffffff !important; /* Default to white text */
+        background-color: #444 !important; /* Default dark button background */
+        border: 1px solid #666 !important; /* Default dark button border */
+    }
+     button:hover {
+         background-color: #555 !important;
+         border-color: #777 !important;
+     }
+
+    #add-category-button, #save-button { background-color: #2e7d32 !important; border-color: #2e7d32 !important; color: white !important; } /* Darker Green */
+     #add-category-button:hover, #save-button:hover { background-color: #1b5e20 !important; border-color: #1b5e20 !important; }
+
+    #filter-button { background-color: #1976d2 !important; border-color: #1976d2 !important; color: white !important; } /* Darker Blue */
+     #filter-button:hover { background-color: #115293 !important; border-color: #115293 !important; }
+
+    #clear-filter-button, #cancel-button, .delete-button { background-color: #616161 !important; border-color: #616161 !important; color: white !important; } /* Darker Grey */
+     #clear-filter-button:hover, #cancel-button:hover, .delete-button:hover { background-color: #424242 !important; border-color: #424242 !important; }
+
+    .edit-button { background-color: #ffa000 !important; border-color: #ffa000 !important; color: #000000 !important; } /* Darker Yellow, Black text */
+     .edit-button:hover { background-color: #ff8f00 !important; border-color: #ff8f00 !important; }
+
+    .error {
+        color: #ffcdd2 !important; /* Lighter text on dark red */
+        background-color: #b71c1c !important; /* Darker red background */
+        border: 1px solid #e57373 !important; /* Slightly lighter border */
+    }
+
+    /* Dark mode breadcrumbs */
+    .breadcrumb {
+        background-color: #343a40 !important;
+        color: #ccc !important;
+    }
+    .breadcrumb-item a {
+        color: #90caf9 !important; /* Match link color */
+    }
+    .breadcrumb-item + .breadcrumb-item::before {
+        color: #aaa !important;
+    }
+    .breadcrumb-item.active {
+        color: #aaa !important;
+    }
+
+    /* Ensure AdminLTE card backgrounds are black in dark mode */
+    .card {
+        background-color: #000000 !important;
+        color: #ffffff !important;
+        border: 1px solid #333 !important;
+    }
+
+    .card-header {
+        background-color: #111111 !important;
+        color: #ffffff !important;
+        border-bottom: 1px solid #333 !important;
+    }
+
+    .card-body {
+        background-color: #000000 !important;
+        color: #ffffff !important;
+    }
+
+    .card-footer {
+        background-color: #111111 !important;
+        color: #ffffff !important;
+        border-top: 1px solid #333 !important;
+    }
+
+    /* Target other potential container elements */
+    .container-fluid, .row, .col-sm-6, .content-wrapper {
+        background-color: #000000 !important;
+        color: #ffffff !important;
+    }
+}
+
+/* --- Basic Responsiveness --- */
+@media (max-width: 768px) {
+    body {
+        margin: 10px;
+    }
+
+    .filter-section, .actions-section {
+        padding: 10px;
+    }
+
+    th, td {
+        padding: 8px 10px;
+    }
+
+    button {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+    .form-section {
+        padding: 15px;
+    }
+
+    .form-section input[type="text"],
+    .form-section select,
+    .form-section textarea {
+        width: calc(100% - 18px); /* Adjust for smaller padding */
+        padding: 8px;
+        margin-bottom: 12px;
+    }
+     .form-section select {
+         height: 36px;
+     }
+
+
+    .form-section .language-dict input {
+         width: calc(100% - 55px); /* Adjust if needed */
+    }
+
+}
+
+@media (max-width: 480px) {
+     /* Stack filter elements */
+    .filter-section label,
+    .filter-section input,
+    .filter-section button {
+        display: block;
+        width: calc(100% - 20px); /* Adjust width */
+        margin-bottom: 10px;
+        margin-right: 0;
+    }
+     .filter-section input {
+         box-sizing: border-box;
+     }
+
+
+    /* Hide less important table columns or stack table data if needed */
+    /* Example: Hiding CEFR column */
+    /*
+    th:nth-child(5), td:nth-child(5) {
+        display: none;
+    }
+    */
+
+    .form-actions button {
+        display: block;
+        width: 100%;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+    }
+     .form-actions button:last-child {
+         margin-bottom: 0;
+     }
+
+}
+tbody tr:nth-child(odd) {
+    background-color: #f8f9fa;
+}
+
+tbody tr:hover {
+    background-color: #e2e6ea;
+}
+
+/*button {*/
+    /*padding: 8px 15px;*/
+    /*margin-right: 5px;*/
+    /*cursor: pointer;*/
+    /*border: 1px solid transparent;*/
+    /*border-radius: 4px;*/
+    /*font-size: 14px;*/
+/*}*/
+
+/*button:hover {*/
+    /*opacity: 0.9;*/
+/*}*/
+
+/* Specific Button Styles */
+/*#add-category-button, #save-button {*/
+    /*background-color: #28a745;*/
+    /*color: white;*/
+    /*border-color: #28a745;*/
+/*}*/
+/*#add-category-button:hover, #save-button:hover {*/
+    /*background-color: #218838;*/
+    /*border-color: #1e7e34;*/
+/*}*/
+
+/*#filter-button {*/
+    /*background-color: #007bff;*/
+    /*color: white;*/
+    /*border-color: #007bff;*/
+/*}*/
+/*#filter-button:hover {*/
+    /*background-color: #0069d9;*/
+    /*border-color: #0062cc;*/
+/*}*/
+
+/*#clear-filter-button, #cancel-button, .delete-button {*/
+    /*background-color: #6c757d;*/
+    /*color: white;*/
+    /*border-color: #6c757d;*/
+/*}*/
+/*#clear-filter-button:hover, #cancel-button:hover, .delete-button:hover {*/
+    /*background-color: #5a6268;*/
+    /*border-color: #545b62;*/
+/*}*/
+
+/*.edit-button {*/
+    /*background-color: #ffc107;*/
+    /*color: #212529;*/
+    /*border-color: #ffc107;*/
+/*}*/
+/*.edit-button:hover {*/
+    /*background-color: #e0a800;*/
+    /*border-color: #d39e00;*/
+/*}*/
+
+
+.filter-section, .actions-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+label {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+input[type="text"], input[type="search"], select {
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    margin-right: 5px;
+}
+
+.form-section {
+    display: none; /* Initially hidden */
+    border: 1px solid #dee2e6;
+    padding: 20px;
+    margin-top: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.form-section label {
+    display: block;
+    margin-bottom: 8px; /* Increased spacing */
+    color: #495057;
+}
+
+.form-section input[type="text"],
+.form-section select,
+.form-section textarea {
+    width: calc(100% - 20px); /* Adjust width for padding */
+    margin-bottom: 15px; /* Increased spacing */
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-section .language-dict {
+    margin-left: 0; /* Remove indent */
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px dashed #ced4da; /* Add visual separation */
+    border-radius: 4px;
+}
+
+.form-section .language-dict label {
+    display: inline-block;
+    width: auto; /* Adjust width */
+    margin-right: 5px;
+    margin-bottom: 5px; /* Spacing below label */
+    font-weight: normal; /* Normal weight for sub-labels */
+}
+
+.form-section .language-dict input {
+    width: calc(100% - 50px); /* Adjust based on label width */
+    display: inline-block;
+    margin-bottom: 5px; /* Spacing below input */
+}
+
+.form-section button[type="button"] {
+    background-color: #e9ecef;
+    color: #495057;
+    border: 1px solid #ced4da;
+    margin-top: 5px; /* Space above add button */
+    margin-bottom: 15px; /* Space below add button */
+    font-size: 12px;
+    padding: 5px 10px;
+}
+.form-section button[type="button"]:hover {
+     background-color: #dee2e6;
+}
+
+
+.form-section small {
+    display: block;
+    margin-top: -10px;
+    margin-bottom: 10px;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.form-section input[type="checkbox"] {
+    margin-right: 5px;
+}
+.form-section input[type="checkbox"] + label {
+    display: inline-block;
+    margin-right: 15px;
+    font-weight: normal;
+}
+
+
+.error {
+    color: #dc3545;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+
+/* Reduce row height in specific tables */
+#word-items-table-container .table td,
+#lists-table-body td {
+  white-space: normal !important; /* Override pre-wrap */
+  line-height: 1.3; /* Tighter line height */
+  padding-top: 4px !important;    /* Further reduce top padding */
+  padding-bottom: 4px !important; /* Further reduce bottom padding */
+}

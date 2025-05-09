@@ -34,64 +34,96 @@ from pydantic import BaseModel, ValidationError
 # --- Get Logger ---
 logger = logging.getLogger(__name__) # Get logger instance for this module
 
-# Import configuration variables
+# Import the config module, but defer accessing its attributes
 try:
-    from config import (
-        GOOGLE_API_KEY, DEEPSEEK_API_KEY,
-        DEFAULT_LLM_PROVIDER, DEFAULT_GOOGLE_MODEL, DEFAULT_DEEPSEEK_MODEL
-    )
+    import config
     config_loaded = True
 except ImportError:
     logger.error("Error: Could not import configuration from config.py. LLM clients will likely fail.")
-    # Keep print for cases where logging might not be configured yet or fails
-    print("CRITICAL Error: Could not import configuration from config.py.")
-    # Set flags/defaults to prevent crashes later if config failed
     config_loaded = False
-    GOOGLE_API_KEY = None
-    DEEPSEEK_API_KEY = None
-    DEFAULT_LLM_PROVIDER = 'googleai' # Default guess
-    DEFAULT_GOOGLE_MODEL = 'gemini-1.5-flash-latest'
-    DEFAULT_DEEPSEEK_MODEL = 'deepseek-chat'
-    # sys.exit(1) # Avoid exiting here, let the functions fail gracefully
+    # Define a dummy config object with None values to prevent AttributeError later
+    config = type('obj', (object,), {
+        'get_google_api_key': lambda: None,
+        'DEEPSEEK_API_KEY': None,
+        'DEFAULT_LLM_PROVIDER': 'googleai',
+        'DEFAULT_GOOGLE_MODEL': 'gemini-1.5-flash-latest',
+        'DEFAULT_DEEPSEEK_MODEL': 'deepseek-chat'
+    })()
+
 
 # --- Configure Clients ---
+# We configure clients lazily now, especially Google, to avoid import-time issues.
+# DeepSeek client configuration is also moved into a lazy function.
 google_configured = False
-if GOOGLE_API_KEY:
-    try:
-        logger.info("Configuring Google Generative AI client...")
-        # Only configure if key is present
-        genai.configure(api_key=GOOGLE_API_KEY)
-        google_configured = True
-        logger.info("Google Generative AI client configured successfully.")
-    except Exception as e:
-        logger.warning(f"Failed to configure Google Generative AI client: {e}. Google AI calls will fail.")
-        google_configured = False # Ensure it's false on failure
-else:
-    logger.warning("Google API Key not found in config. Google AI provider will be unavailable.")
+deepseek_client: Optional[AsyncOpenAI] = None # Initialize as None
 
+def configure_google_client():
+    """Configures the Google client if not already done."""
+    global google_configured
+    if google_configured:
+        return True
 
-deepseek_client: Optional[AsyncOpenAI] = None
-if DEEPSEEK_API_KEY:
-    try:
-        logger.info("Configuring DeepSeek client (via OpenAI SDK)...")
-        # Configure httpx client for DeepSeek - disable SSL verification if needed (use with caution)
-        # verify_ssl = os.environ.get("DEEPSEEK_VERIFY_SSL", "true").lower() == "true"
-        # http_client = httpx.AsyncClient(verify=verify_ssl, trust_env=False) # trust_env=False might be important
-        http_client = httpx.AsyncClient(trust_env=False) # Simpler default
+    if not config_loaded:
+         logger.error("Cannot configure Google client: config.py failed to import.")
+         return False
 
-        deepseek_client = AsyncOpenAI(
-            api_key=DEEPSEEK_API_KEY,
-            base_url="https://api.deepseek.com/v1", # Ensure correct base URL
-            http_client=http_client,
-            timeout=60.0, # Set a reasonable timeout
-            max_retries=0 # Handle retries manually in our code
-        )
-        logger.info("DeepSeek client configured successfully.")
-    except Exception as e:
-        logger.warning(f"Failed to configure DeepSeek client: {e}. DeepSeek calls will fail.")
-        deepseek_client = None # Ensure client is None on failure
-else:
-    logger.warning("DeepSeek API Key not found in config. DeepSeek provider will be unavailable.")
+    # Access the lazy getter from the imported config module
+    google_api_key = config.get_google_api_key()
+
+    if google_api_key:
+        try:
+            logger.info("Configuring Google Generative AI client...")
+            genai.configure(api_key=google_api_key)
+            google_configured = True
+            logger.info("Google Generative AI client configured successfully.")
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to configure Google Generative AI client: {e}. Google AI calls will fail.")
+            google_configured = False
+            return False
+    else:
+        logger.warning("Google API Key not available from Secret Manager. Google AI provider will be unavailable.")
+        google_configured = False
+        return False
+
+def configure_deepseek_client():
+    """Configures the DeepSeek client if not already done."""
+    global deepseek_client
+    if deepseek_client is not None:
+        return True
+
+    if not config_loaded:
+         logger.error("Cannot configure DeepSeek client: config.py failed to import.")
+         return False
+
+    # Access the API key from the imported config module
+    deepseek_api_key = config.DEEPSEEK_API_KEY
+
+    if deepseek_api_key:
+        try:
+            logger.info("Configuring DeepSeek client (via OpenAI SDK)...")
+            http_client = httpx.AsyncClient(trust_env=False) # Simpler default
+
+            deepseek_client = AsyncOpenAI(
+                api_key=deepseek_api_key,
+                base_url="https://api.deepseek.com/v1", # Ensure correct base URL
+                http_client=http_client,
+                timeout=60.0, # Set a reasonable timeout
+                max_retries=0 # Handle retries manually in our code
+            )
+            logger.info("DeepSeek client configured successfully.")
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to configure DeepSeek client: {e}. DeepSeek calls will fail.")
+            deepseek_client = None # Ensure client is None on failure
+            return False
+    else:
+        logger.warning("DeepSeek API Key not found in config. DeepSeek provider will be unavailable.")
+        deepseek_client = None
+        return False
+
+# Clients are now configured within the generate_structured_content function
+# or explicitly called via configure_google_client/configure_deepseek_client if needed elsewhere.
 
 
 # --- Define Safety Settings (Google AI specific) ---
@@ -112,9 +144,17 @@ T = TypeVar('T', bound=BaseModel) # Type variable constrained to Pydantic BaseMo
 async def generate_structured_content(
     prompt: str,
     response_model: Optional[Type[T]] = None,
-    provider: str = DEFAULT_LLM_PROVIDER,
+    provider: str = config.DEFAULT_LLM_PROVIDER,
     model_name: Optional[str] = None,
     temperature: float = 0.5,
+    # --- New Gemini Specific Params ---
+    top_p: Optional[float] = None,
+    top_k: Optional[int] = None,
+    max_output_tokens: Optional[int] = None,
+    stop_sequences: Optional[List[str]] = None,
+    response_mime_type: Optional[str] = None, # e.g., "application/json"
+    response_schema: Optional[Union[Dict, Type[BaseModel]]] = None, # Pydantic model or dict schema
+    # --- End New Gemini Specific Params ---
     max_retries: int = 2,
     initial_delay: float = 1.5, # Slightly increased delay
     system_prompt: Optional[str] = "You are a helpful assistant designed to output JSON." # More specific default
@@ -133,22 +173,39 @@ async def generate_structured_content(
          logger.error("LLM Client Error: Configuration failed to load. Cannot generate content.")
          return {"error": "LLM configuration failed to load", "raw_text": None}
 
-    # Select provider and check configuration
+    # Select provider and check/configure client
     if provider == 'googleai':
-        if not google_configured:
-            logger.error("LLM Error: Google AI client not configured or API key missing.")
-            return {"error": "Google AI client not configured", "raw_text": None}
+        # Ensure Google client is configured before proceeding
+        if not configure_google_client(): # Call the lazy configuration function
+             logger.error("LLM Error: Google AI client could not be configured.")
+             return {"error": "Google AI client could not be configured", "raw_text": None}
+             
         # Use specific model if provided, otherwise use default from config
-        model_to_use = model_name or DEFAULT_GOOGLE_MODEL
+        model_to_use = model_name or config.DEFAULT_GOOGLE_MODEL
         logger.debug(f"Using Google AI model: {model_to_use}")
-        result = await _generate_googleai(prompt, response_model, model_to_use, temperature, max_retries, initial_delay, system_prompt)
+        result = await _generate_googleai(
+            prompt=prompt,
+            response_model=response_model,
+            model_name=model_to_use,
+            temperature=temperature,
+            top_p=top_p, # Pass down
+            top_k=top_k, # Pass down
+            max_output_tokens=max_output_tokens, # Pass down
+            stop_sequences=stop_sequences, # Pass down
+            response_mime_type=response_mime_type, # Pass down
+            response_schema=response_schema, # Pass down
+            max_retries=max_retries,
+            initial_delay=initial_delay,
+            system_prompt=system_prompt
+        )
 
     elif provider == 'deepseek':
+        # Note: DeepSeek part does not use the new Gemini-specific params yet
         if not deepseek_client:
             logger.error("LLM Error: DeepSeek client not configured or API key missing.")
             return {"error": "DeepSeek client not configured", "raw_text": None}
         # Use specific model if provided, otherwise use default from config
-        model_to_use = model_name or DEFAULT_DEEPSEEK_MODEL
+        model_to_use = model_name or config.DEFAULT_DEEPSEEK_MODEL
         logger.debug(f"Using DeepSeek model: {model_to_use}")
         result = await _generate_deepseek(prompt, response_model, model_to_use, temperature, max_retries, initial_delay, system_prompt)
 
@@ -204,25 +261,46 @@ def _clean_llm_json_output(raw_text: str, expected_model_name: str) -> str:
 # --- Provider Specific Functions ---
 
 async def _generate_googleai(
-    prompt: str, response_model: Optional[Type[T]], model_name: str,
-    temperature: float, max_retries: int, initial_delay: float, system_prompt: Optional[str]
+    prompt: str,
+    response_model: Optional[Type[T]],
+    model_name: str,
+    temperature: float,
+    top_p: Optional[float],
+    top_k: Optional[int],
+    max_output_tokens: Optional[int],
+    stop_sequences: Optional[List[str]],
+    response_mime_type: Optional[str],
+    response_schema: Optional[Union[Dict, Type[BaseModel]]],
+    max_retries: int,
+    initial_delay: float,
+    system_prompt: Optional[str]
 ) -> Optional[Union[T, str, Dict[str, Any]]]:
     """Handles generation using the google-generativeai library."""
     logger.info(f"--- Calling Google AI ({model_name}) ---")
+    logger.debug(f"Params: temp={temperature}, top_p={top_p}, top_k={top_k}, max_tokens={max_output_tokens}, stop={stop_sequences}, mime={response_mime_type}, schema_provided={response_schema is not None}")
 
     contents = []
     # Add system prompt if provided (as the first part of the first 'user' turn)
     full_user_prompt = (system_prompt + "\n\n" + prompt) if system_prompt else prompt
     contents.append({"role": "user", "parts": [full_user_prompt]})
 
-    # Append JSON instruction if a response model is expected
+    # Determine the effective mime type *before* checking if JSON is expected
+    effective_response_mime_type = response_mime_type
+    if response_schema and not effective_response_mime_type:
+        effective_response_mime_type = "application/json" # Default to JSON if schema is provided
+        logger.info("Defaulting response_mime_type to 'application/json' because response_schema was provided.")
+
+    # Append JSON instruction if JSON output is expected (via response_model or response_schema)
     json_instruction = ""
-    if response_model:
-        # model_schema = response_model.model_json_schema() # Schema can be large
-        logger.info(f"Expecting structured JSON output matching: {response_model.__name__}")
+    # Determine if JSON output is intended
+    expect_json = response_model or (response_schema and effective_response_mime_type == "application/json")
+
+    if expect_json:
+        model_name_for_log = response_model.__name__ if response_model else "the provided schema"
+        logger.info(f"Expecting structured JSON output matching: {model_name_for_log}")
         json_instruction = (
             f"\n\nCRITICAL: Your entire response MUST be a single, valid JSON object that conforms "
-            f"exactly to the Pydantic schema structure for the model '{response_model.__name__}'. "
+            f"exactly to the structure defined ({model_name_for_log}). "
             f"Do not include any text, comments, explanations, apologies, or markdown formatting "
             f"(like ```json) outside the main JSON object itself.\n"
         )
@@ -235,15 +313,32 @@ async def _generate_googleai(
 
     try:
         model = genai.GenerativeModel(model_name)
-        generation_config = GoogleGenerationConfig(temperature=temperature)
 
-        # Enable JSON mode if model supports it (e.g., Gemini 1.5 Pro/Flash)
-        if response_model and ("1.5" in model_name or "gemini-pro" in model_name):
-             try:
-                generation_config.response_mime_type="application/json"
-                logger.info("Set response_mime_type=application/json for Google AI model.")
-             except (AttributeError, ValueError) as mime_err:
-                 logger.warning(f"Could not set response_mime_type (model might not support it): {mime_err}")
+        # --- Construct GenerationConfig ---
+        config_params = {"temperature": temperature}
+        if top_p is not None: config_params["top_p"] = top_p
+        if top_k is not None: config_params["top_k"] = top_k
+        if max_output_tokens is not None: config_params["max_output_tokens"] = max_output_tokens
+        
+        # Add stop_sequences to config_params
+        if stop_sequences is not None:
+            config_params["stop_sequences"] = stop_sequences
+            logger.debug(f"Added stop_sequences to config_params: {stop_sequences}")
+
+        # Handle response format and schema (effective_response_mime_type calculated earlier)
+        if effective_response_mime_type:
+            config_params["response_mime_type"] = effective_response_mime_type
+        if response_schema and effective_response_mime_type == "application/json":
+            # Pass schema only if mime type is JSON
+            config_params["response_schema"] = response_schema
+            logger.info(f"Using response_schema (type: {type(response_schema).__name__}) for Google AI model.")
+        elif response_schema:
+             logger.warning(f"response_schema provided but response_mime_type is '{effective_response_mime_type}', schema will be ignored by the API.")
+
+        generation_config = GoogleGenerationConfig(**config_params)
+        logger.debug(f"Constructed GoogleGenerationConfig: {generation_config}")
+        # --- End Construct GenerationConfig ---
+
 
         current_delay = initial_delay
         last_error = None
@@ -256,7 +351,8 @@ async def _generate_googleai(
                     contents,
                     generation_config=generation_config,
                     safety_settings=GOOGLE_SAFETY_SETTINGS,
-                    request_options={'timeout': 120}
+                    # Removed stop_sequences=stop_sequences from here
+                    request_options={'timeout': 120} # Consider making timeout configurable
                 )
 
                 # --- Extract Raw Text ---

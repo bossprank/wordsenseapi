@@ -1,0 +1,39 @@
+{% extends "base_adminlte.html" %}
+{% block title %}Manage Language Pairs{% endblock %}
+{% block content %}
+  <h1>Manage Language Pair Configurations</h1>
+
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Manage Language Pair Configurations</li>
+      </ol>
+    </nav>
+
+    <div class="actions-section">
+        <button id="add-config-button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add New Configuration</button>
+        <button type="button" id="cancel-button" class="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-600" onclick="window.location.href='{{ url_for('manage_language_pairs_page') }}'">Cancel</button>
+    </div>
+
+    <div id="config-table-container" style="overflow-x: auto; width: 100%;">
+        <table id="config-table">
+            <thead>
+                <tr>
+                    <th>Language Pair</th>
+                    <th>Config Key</th>
+                    <th>Value</th>
+                    <th>Version Control</th>
+                    <th>Audit Dates</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="config-list-tbody">
+                <!-- Configurations will be loaded here by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="{{ url_for('static', filename='language_pair_manager.js') }}"></script>
+    <p style="font-size: smaller;">Screen: Manage Language Pair Configurations Screen | Version: 1.0</p>
+{% endblock %}

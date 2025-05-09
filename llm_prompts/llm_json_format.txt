@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "words": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "headword": {"type": "string"},
+          "translation_en": {"type": "string"}
+        },
+        "required": ["headword"]
+      }
+    }
+  },
+  "required": ["words"]
+}

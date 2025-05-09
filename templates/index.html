@@ -1,0 +1,32 @@
+{% extends "base_adminlte.html" %}
+{% block title %}Home{% endblock %}
+{% block body_classes %}index-page{% endblock %}
+{% block content %}
+  <h1>WordSense Application</h1>
+  <p>Welcome!</p>
+  <p>
+    <button class="btn btn-primary navigate-btn" data-url="{{ url_for('manage_categories_page') }}">Manage Vocabulary Categories</button>
+  </p>
+  <p>
+    <button class="btn btn-primary navigate-btn" data-url="{{ url_for('manage_language_pairs_page') }}">Manage Language Pair Configurations</button>
+  </p>
+  <p>
+    <button class="btn btn-primary navigate-btn" data-url="{{ url_for('view_generated_lists_page') }}">View Generated Vocabulary Lists</button>
+  </p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const buttons = document.querySelectorAll('.navigate-btn');
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            const url = button.dataset.url;
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

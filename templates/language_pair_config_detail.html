@@ -1,0 +1,93 @@
+{% extends "base_adminlte.html" %}
+{% block title %}{{ 'Add New' if not config_id or config_id == 'new' else 'Edit' }} Language Pair Configuration{% endblock %}
+{% block content %}
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('manage_language_pairs_page') }}">Manage Language Pair Configurations</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ 'Add New' if not config_id or config_id == 'new' else 'Edit Configuration' }}</li>
+      </ol>
+    </nav>
+
+    <div id="config-form-section" class="form-section" style="display: block;"> <!-- Make visible by default -->
+        <h2 id="form-title">{{ 'Add New' if not config_id or config_id == 'new' else 'Edit' }} Language Pair Configuration</h2>
+        <form id="config-detail-form">
+            <input type="hidden" id="config_id" name="config_id" value="{{ config_id if config_id and config_id != 'new' else '' }}">
+            <input type="hidden" id="form-mode" value="{{ 'edit' if config_id and config_id != 'new' else 'add' }}">
+
+            <fieldset>
+                <legend>Core Configuration</legend>
+                <div>
+                    <label for="language_pair_source">Source Language (e.g., en):</label>
+                    <input type="text" id="language_pair_source" name="language_pair_source" pattern="[a-z]{2}" maxlength="2" required>
+                </div>
+                <div>
+                    <label for="language_pair_target">Target Language (e.g., id):</label>
+                    <input type="text" id="language_pair_target" name="language_pair_target" pattern="[a-z]{2}" maxlength="2" required>
+                </div>
+                <div>
+                    <label for="config_key">Configuration Key:</label>
+                    <input type="text" id="config_key" name="config_key" required>
+                    <small>(Identifier for the setting, e.g., 'date_format')</small>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Value</legend>
+                <div>
+                    <label for="config_value">Configuration Value:</label>
+                    <textarea id="config_value" name="config_value" rows="3" required></textarea>
+                    <small>(The actual setting value. Use valid JSON for array/object types)</small>
+                </div>
+                <div>
+                    <label for="value_type">Value Type:</label>
+                    <select id="value_type" name="value_type" required>
+                        <option value="string">String</option>
+                        <option value="number">Number</option>
+                        <option value="boolean">Boolean</option>
+                        <option value="array">Array (JSON)</option>
+                        <option value="json">JSON Object</option>
+                        <option value="date">Date</option>
+                    </select>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Versioning</legend>
+                <div>
+                    <label for="effective_date">Effective Date:</label>
+                    <input type="datetime-local" id="effective_date" name="effective_date" required>
+                </div>
+                <div>
+                    <label for="expiry_date">Expiry Date (optional):</label>
+                    <input type="datetime-local" id="expiry_date" name="expiry_date">
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Metadata (Optional)</legend>
+                <div id="description_inputs" class="language-dict">
+                     <label for="description_en">en:</label>
+                     <textarea id="description_en" name="description[en]" rows="2"></textarea>
+                </div>
+            </fieldset>
+
+            <label for="updated_by">Updated By (optional):</label>
+            <input type="text" id="updated_by" name="updated_by">
+
+            <div id="form-error" class="error" style="display: none;"></div>
+
+            <div class="form-actions">
+                <button type="submit" id="save-button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save Configuration</button>
+                <button type="button" id="cancel-button" class="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-600" style="padding: 0.5rem 1rem; font-size: 1rem;" onclick="window.location.href='{{ url_for('manage_language_pairs_page') }}'">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='language_pair_config_detail.js') }}"></script>
+    <footer class="bg-gray-100 text-center text-xs text-gray-600 py-2 fixed bottom-0 w-full">
+      Version: 1.0.0 | Build: 4
+    </footer>
+{% endblock %}
+</body>
+</html>

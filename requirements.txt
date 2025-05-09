@@ -4,6 +4,7 @@ Werkzeug==3.0.6 # Flask dependency, pinned by user
 
 # Google Cloud / AI
 google-cloud-firestore==2.17.0
+google-cloud-secret-manager==2.23.3 # Added
 google-generativeai==0.7.2
 openai==1.37.0
 httpx==0.27.0 # *** Added HTTP client library ***
@@ -11,6 +12,7 @@ httpx==0.27.0 # *** Added HTTP client library ***
 # Utilities
 python-dotenv==1.0.1
 pydantic==2.8.2
+pytz==2025.2 # Added for timezone conversions
 
 # Development Tools
 pip # Usually managed separately, but can be listed
@@ -19,3 +21,5 @@ flake8==7.1.0 # Linter
 
 # Deployment (Optional)
 gunicorn==22.0.0 # WSGI Server
+uvicorn[standard]==0.29.0 # ASGI Server for async Flask
+a2wsgi==1.8.0 # WSGI to ASGI Adapter

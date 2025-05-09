@@ -1,0 +1,181 @@
+{% extends "base_adminlte.html" %}
+
+{% block title %}Generate New Word List{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">Generate New Vocabulary List</h3>
+                </div>
+                <!-- /.card-header -->
+                <!-- form start -->
+                <form id="generate-list-form">
+                    <div class="card-body">
+                        
+                        <h4>Core Parameters</h4>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="language">Language</label>
+                                    <select class="form-control" id="language" name="language" required>
+                                        <option value="">Select Language...</option>
+                                        <option value="id">Indonesian (id)</option>
+                                        <option value="en">English (en)</option>
+                                        <option value="es">Spanish (es)</option>
+                                        {# Add other supported languages #}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="cefr_level">CEFR Level</label>
+                                    <select class="form-control" id="cefr_level" name="cefr_level" required>
+                                        <option value="">Select Level...</option>
+                                        <option value="A1">A1</option>
+                                        <option value="A2">A2</option>
+                                        <option value="B1">B1</option>
+                                        <option value="B2">B2</option>
+                                        <option value="C1">C1</option>
+                                        <option value="C2">C2</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="requested_word_count">Approx. Word Count</label>
+                                    <input type="number" class="form-control" id="requested_word_count" name="requested_word_count" value="50" min="1" max="5000" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="list_category_id">List Category</label>
+                                    <select class="form-control" id="list_category_id" name="list_category_id" required>
+                                        <option value="">Loading Categories...</option>
+                                        {# Options populated by JS #}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h4>LLM Instructions (Layered)</h4>
+                        <div class="form-group">
+                            <label for="base_instruction_file_ref">Base Instruction File Ref (in llm_prompts/)</label>
+                            <input type="text" class="form-control" id="base_instruction_file_ref" name="base_instruction_file_ref" placeholder="e.g., base_vocab_v1.txt" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="custom_instruction_file_ref">Custom Instruction File Ref (Optional, in llm_prompts/)</label>
+                            <input type="text" class="form-control" id="custom_instruction_file_ref" name="custom_instruction_file_ref" placeholder="e.g., indonesian_a1_food.txt">
+                        </div>
+                        <div class="form-group">
+                            <label for="ui_text_refinements">UI Text Refinements (Optional)</label>
+                            <textarea class="form-control" id="ui_text_refinements" name="ui_text_refinements" rows="3" placeholder="Add final small adjustments or constraints here..."></textarea>
+                        </div>
+
+                        <hr>
+                        <h4>Gemini API Parameters</h4>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="source_model">Model</label>
+                                    <select class="form-control" id="source_model" name="source_model" required>
+                                        {# Add relevant Gemini models #}
+                                        <option value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
+                                        <option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+                                        <option value="gemini-1.0-pro">gemini-1.0-pro</option>
+                                    </select>
+                                </div>
+                            </div>
+                             <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="gemini_temperature">Temperature (0.0 - 2.0)</label>
+                                    <input type="number" class="form-control" id="gemini_temperature" name="gemini_temperature" value="0.7" step="0.1" min="0.0" max="2.0" required>
+                                </div>
+                            </div>
+                             <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="gemini_top_p">Top P (0.0 - 1.0)</label>
+                                    <input type="number" class="form-control" id="gemini_top_p" name="gemini_top_p" value="0.95" step="0.05" min="0.0" max="1.0" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                           <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="gemini_top_k">Top K (e.g., 1-100)</label>
+                                    <input type="number" class="form-control" id="gemini_top_k" name="gemini_top_k" value="40" step="1" min="1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="gemini_max_output_tokens">Max Output Tokens</label>
+                                    <input type="number" class="form-control" id="gemini_max_output_tokens" name="gemini_max_output_tokens" value="2048" step="1" min="1" required>
+                                </div>
+                            </div>
+                             <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="gemini_stop_sequences">Stop Sequences (comma-sep, Optional)</label>
+                                    <input type="text" class="form-control" id="gemini_stop_sequences" name="gemini_stop_sequences" placeholder="e.g., END,---">
+                                </div>
+                            </div>
+                        </div>
+                         <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="gemini_response_mime_type">Response Format</label>
+                                    <select class="form-control" id="gemini_response_mime_type" name="gemini_response_mime_type" required>
+                                        <option value="application/json">JSON</option>
+                                        <option value="text/plain">Text</option>
+                                    </select>
+                                </div>
+                            </div>
+                             <div class="col-md-6" id="json-schema-group" style="display: block;"> {# Show by default for JSON #}
+                                <div class="form-group">
+                                    <label for="gemini_response_schema_used">JSON Schema (Optional, if Response Format is JSON)</label>
+                                    <textarea class="form-control" id="gemini_response_schema_used" name="gemini_response_schema_used" rows="5" placeholder='e.g., {"type": "OBJECT", "properties": {"words": {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {"headword": {"type": "STRING"}, "translation_en": {"type": "STRING"}}, "required": ["headword"]}}}, "required": ["words"]}'></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h4>Output Options</h4>
+                         <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                                <input class="custom-control-input" type="checkbox" id="include_english_translation" name="include_english_translation" value="true" checked>
+                                <label for="include_english_translation" class="custom-control-label">Include English Translation</label>
+                                <small class="form-text text-muted">(May be superseded if defined by JSON Schema)</small>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        <h4>Admin Info</h4>
+                         <div class="form-group">
+                            <label for="admin_notes">Admin Notes (Optional)</label>
+                            <textarea class="form-control" id="admin_notes" name="admin_notes" rows="3" placeholder="Internal notes about this generation task..."></textarea>
+                        </div>
+                         <div class="form-group">
+                             {# Assuming generated_by is handled server-side based on logged-in user #}
+                             <input type="hidden" id="generated_by" name="generated_by" value="admin_placeholder"> 
+                         </div>
+
+
+                    </div>
+                    <!-- /.card-body -->
+
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">Generate Word List</button>
+                        <div id="status-message" class="mt-3"></div>
+                    </div>
+                </form>
+            </div>
+            <!-- /.card -->
+        </div>
+    </div>
+</div>
+
+{# Include necessary JS file #}
+<script src="{{ url_for('static', filename='generate_new_word_list.js') }}"></script> 
+{% endblock %}

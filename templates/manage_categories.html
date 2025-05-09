@@ -1,0 +1,121 @@
+{% extends "base_adminlte.html" %}
+{% block title %}Manage Categories{% endblock %}
+{% block content %}
+  <h1>Manage Vocabulary Categories</h1>
+
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Manage Categories</li>
+      </ol>
+    </nav>
+
+    <div class="filter-section">
+        <label for="language-filter">Filter by Language Code (e.g., en, id): </label>
+        <input type="text" id="language-filter" name="lang" size="5">
+        <button id="filter-button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Filter</button>
+        <button id="clear-filter-button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Show All</button>
+    </div>
+
+    <div class="actions-section">
+        <button id="add-category-button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add New Category</button>
+    </div>
+
+    <!-- Add a container for horizontal scrolling -->
+    <div id="category-table-container" style="overflow-x: auto; width: 100%;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Category ID</th>
+                    <th>Display Names</th>
+                    <th>Descriptions</th>
+                    <th>Type</th>
+                    <th>CEFR Levels</th>
+                    <th>Example Words</th>
+                    <th>Badge ID</th>
+                    <th>Audit Dates</th> <!-- Combined Timestamp Column -->
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="category-table-body">
+                <!-- Category rows will be loaded here by JavaScript -->
+                <tr>
+                    <td colspan="9">Loading categories...</td> <!-- Adjusted colspan -->
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add/Edit Form Section (Initially Hidden) -->
+    <div id="category-form-section" class="form-section">
+        <h2 id="form-title">Add/Edit Category</h2>
+        <form id="category-form">
+            <input type="hidden" id="form-mode" value="add"> <!-- 'add' or 'edit' -->
+
+            <label for="category_id">Category ID:</label>
+            <input type="text" id="category_id" name="category_id" required>
+            <small>(Unique identifier, e.g., 'theme_food')</small>
+
+            <fieldset>
+                <legend>Display Names</legend>
+                <div id="display_name_inputs" class="language-dict">
+                    <!-- JS will add inputs like: <label>en:</label><input type="text" name="display_name[en]"><br> -->
+                </div>
+        <button type="button" id="add-display-name-lang" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add Language</button>
+    </fieldset>
+
+    <fieldset>
+        <legend>Descriptions (Optional)</legend>
+        <div id="description_inputs" class="language-dict">
+            <!-- JS will add inputs -->
+        </div>
+        <button type="button" id="add-description-lang" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add Language</button>
+    </fieldset>
+
+            <label for="type">Type:</label>
+            <select id="type" name="type" required>
+                <option value="thematic">Thematic</option>
+                <option value="grammatical">Grammatical</option>
+                <option value="functional">Functional</option>
+                <option value="other">Other</option>
+            </select>
+
+            <fieldset>
+                 <legend>Applicable CEFR Levels (Optional)</legend>
+                 <div class="checkbox-group">
+                    <input type="checkbox" id="cefr_a1" name="applicable_cefr_levels" value="A1"><label for="cefr_a1">A1</label>
+                    <input type="checkbox" id="cefr_a2" name="applicable_cefr_levels" value="A2"><label for="cefr_a2">A2</label>
+                <input type="checkbox" id="cefr_b1" name="applicable_cefr_levels" value="B1"><label for="cefr_b1">B1</label>
+                <input type="checkbox" id="cefr_b2" name="applicable_cefr_levels" value="B2"><label for="cefr_b2">B2</label>
+                    <input type="checkbox" id="cefr_c1" name="applicable_cefr_levels" value="C1"><label for="cefr_c1">C1</label>
+                    <input type="checkbox" id="cefr_c2" name="applicable_cefr_levels" value="C2"><label for="cefr_c2">C2</label>
+                 </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Example Words (Optional)</legend>
+                <div id="example_words_inputs" class="language-dict">
+                     <!-- JS will add inputs like: <label>id:</label><input type="text" name="example_words[id]" placeholder="Comma-separated words"><br> -->
+                </div>
+                <button type="button" id="add-example-words-lang" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add Language</button>
+            </fieldset>
+
+            <label for="badge_id_association">Badge ID Association (Optional):</label>
+            <input type="text" id="badge_id_association" name="badge_id_association">
+
+            <div id="form-error" class="error" style="display: none;"></div> <!-- Ensure error div is inside form, initially hidden -->
+
+            <div class="form-actions">
+                 <button type="submit" id="save-button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save Category</button>
+                 <button type="button" id="cancel-button" class="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-600" style="padding: 0.5rem 1rem; font-size: 1rem;">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Link to the JavaScript file -->
+    <script src="{{ url_for('static', filename='categories_manager.js') }}"></script>
+    <p style="font-size: smaller;">Screen: Manage Categories Screen | Version: 1.0</p>
+{% endblock %}
+</body>
+</html>

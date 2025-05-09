@@ -1,0 +1,6 @@
+# Client Rules
+- rule: "Add screen name and version number in smaller inconspicuous font under the breadcrumb."
+- rule: "Cost/Context Efficiency: Prioritize targeted file reads/edits (replace_in_file) over full reads/writes (read_file, write_to_file) for large files (> ~200 lines)."
+- rule: "Modular Design: Propose refactoring when files become large (> ~500 lines) or handle multiple distinct responsibilities (e.g., large CSS files, monolithic app files)."
+- rule: "Tool Precision: Formulate precise queries/inputs for context-providing tools (e.g., MCP Context7, search_files) to minimize irrelevant output and reduce cost/context usage."
+- rule: "Environment Dependencies: Ensure necessary system tools (e.g., lsof) used in scripts are declared in environment configurations (e.g., dev.nix) when possible."

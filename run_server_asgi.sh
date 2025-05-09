@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Script to stop any existing process on port 5000 and start the Uvicorn ASGI server.
+
+echo "Attempting to free port 5000..."
+# Try to kill process on port 5000. Suppress errors if lsof not found or no process.
+kill $(lsof -t -i:5000) 2>/dev/null || true
+echo "Port 5000 cleared or was already free."
+
+echo "Activating virtual environment..."
+source .venv/bin/activate
+
+echo "Starting Uvicorn server for asgi_app on http://0.0.0.0:5000 with auto-reload..."
+uvicorn app:asgi_app --host 0.0.0.0 --port 5000 --reload

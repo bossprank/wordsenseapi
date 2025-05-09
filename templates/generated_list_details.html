@@ -1,0 +1,63 @@
+{% extends "base_adminlte.html" %}
+
+{% block title %}Word List Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-2">
+        <div class="col-sm-6">
+            <h1 id="page-title">Word List Details</h1>
+        </div>
+        <div class="col-sm-6">
+            <a href="{{ url_for('view_generated_lists_page') }}" class="btn btn-secondary float-sm-right">
+                <i class="fas fa-arrow-left"></i> Back to All Lists
+            </a>
+        </div>
+    </div>
+
+    <div class="card card-outline card-info">
+        <div class="card-header">
+            <h3 class="card-title">
+                <span id="list-header-info">Loading...</span> 
+                | Status: <span id="list-status" class="badge badge-secondary">Loading...</span>
+            </h3>
+        </div>
+        <div class="card-body">
+            <h4>Generation Parameters</h4>
+            <div id="generation-params-details">
+                <p>Loading parameters...</p>
+                {# Details populated by JS #}
+            </div>
+            
+            <hr>
+            
+            <h4>Word Items (<span id="word-count">0</span> words)</h4>
+            <div id="word-items-table-container" style="max-height: 400px; overflow-y: auto;">
+                 <table class="table table-sm table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 45%;">Headword</th>
+                            <th style="width: 50%;">English Translation</th> 
+                            {# Add more columns if schema defines them #}
+                        </tr>
+                    </thead>
+                    <tbody id="word-items-table-body">
+                        <tr><td colspan="3" class="text-center">Loading words...</td></tr>
+                        {# Rows populated by JS #}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- /.card-body -->
+    </div>
+    <!-- /.card -->
+</div>
+
+{# Include necessary JS file #}
+{# Pass list_firestore_id from Flask route to JS #}
+<script>
+    const LIST_FIRESTORE_ID = "{{ list_firestore_id }}"; 
+</script>
+<script src="{{ url_for('static', filename='generated_list_details.js') }}"></script> 
+{% endblock %}

@@ -1,0 +1,16 @@
+Generate a list of vocabulary words for the target language and CEFR level provided.
+
+CRITICAL REQUIREMENT: Your entire response MUST be a single, valid JSON object. Do not include any text, comments, explanations, apologies, or markdown formatting (like ```json) outside the main JSON object itself.
+
+The JSON object must conform exactly to the following structure:
+{
+  "words": [
+    {
+      "headword": "string",
+      "translation_en": "string" (optional)
+    },
+    ...
+  ]
+}
+
+The "words" array should contain approximately the requested number of vocabulary items. Each item must have a "headword". Include "translation_en" if possible.
