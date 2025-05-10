@@ -135,7 +135,8 @@
                              <div class="col-md-6" id="json-schema-group" style="display: block;"> {# Show by default for JSON #}
                                 <div class="form-group">
                                     <label for="gemini_response_schema_used">JSON Schema (Optional, if Response Format is JSON)</label>
-                                    <textarea class="form-control" id="gemini_response_schema_used" name="gemini_response_schema_used" rows="5" placeholder='e.g., {"type": "OBJECT", "properties": {"words": {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {"headword": {"type": "STRING"}, "translation_en": {"type": "STRING"}}, "required": ["headword"]}}}, "required": ["words"]}'></textarea>
+                                    <textarea class="form-control" id="gemini_response_schema_used" name="gemini_response_schema_used" rows="5" placeholder='e.g., {"type": "OBJECT", "properties": {"words": {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {"headword": {"type": "STRING"}, "translation_en": {"type": "STRING"}}, "required": ["headword"]}}}, "required": ["words"]}'
+                                    >{{ default_schema | safe if default_schema else '' }}</textarea>
                                 </div>
                             </div>
                         </div>

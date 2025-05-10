@@ -1,5 +1,11 @@
 # Lessons Learned: Vocabulary List Generation - 2025-05-08
 
+> **NOTE (2025-05-10):** The project is being migrated from Flask to FastAPI.
+> While many lessons here about LLM interaction, prompting, and data parsing remain valid,
+> specific solutions related to Flask's async context (e.g., using `a2wsgi`)
+> are superseded by FastAPI's native async capabilities.
+> See `.cline/lessons_learned_fastapi_migration_20250510.md` for the new direction.
+
 ## Context
 
 The application features a core function to generate vocabulary lists using an LLM (Google Gemini) based on user inputs (language, CEFR level, category, word count) and save the results to Firestore.
@@ -29,7 +35,9 @@ The application features a core function to generate vocabulary lists using an L
 
 5.  **Saving to Firestore (Async Context):**
     *   **Problem:** Initial attempts to save the generated list using the async Firestore client (`firestore_client.save_generated_list`) failed within the Flask/WSGI context due to event loop issues (See `lessons_learned_async_server_20250508.md`).
-    *   **Solution:** Transitioned the application server to ASGI (Uvicorn + `a2wsgi`), allowing the `async def` route (`generate_list` in `app.py`) to correctly `await` the `save_generated_list` function.
+    *   **Solution (Flask Context - Now Superseded by FastAPI Migration):**
+        <!-- Transitioned the application server to ASGI (Uvicorn + `a2wsgi`), allowing the `async def` route (`generate_list` in `app.py`) to correctly `await` the `save_generated_list` function. -->
+        _The solution at the time involved transitioning the Flask app to an ASGI server using `a2wsgi`. With the migration to FastAPI, a native ASGI framework, this specific bridging solution is no longer applicable. FastAPI will handle its async context directly._
 
 ## Key Takeaways
 

@@ -37,10 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Populate Statuses
             statusSelect.innerHTML = '<option value="">Select Status...</option>'; 
-            options.statuses.forEach(status => {
+            options.statuses.forEach(statusObj => { // Renamed to statusObj for clarity
                 const option = document.createElement('option');
-                option.value = status;
-                option.textContent = status;
+                option.value = statusObj.id; // Corrected: use statusObj.id
+                option.textContent = statusObj.name; // Corrected: use statusObj.name
                 statusSelect.appendChild(option);
             });
 
@@ -48,8 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
             categorySelect.innerHTML = '<option value="">Select Category...</option>';
             options.categories.forEach(cat => {
                 const option = document.createElement('option');
-                option.value = cat.value; // category_id
-                option.textContent = cat.label; // display_name
+                option.value = cat.id; // Corrected: use cat.id
+                option.textContent = cat.name; // Corrected: use cat.name
                 categorySelect.appendChild(option);
             });
 
@@ -68,8 +68,12 @@ document.addEventListener('DOMContentLoaded', () => {
                  const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
                  throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
             }
-            const listData = await response.json();
-            const params = listData.generation_parameters;
+            const responseData = await response.json(); // Renamed to avoid confusion
+            const listDetails = responseData.details; // Access the 'details' object
+            if (!listDetails || !listDetails.generation_parameters) {
+                throw new Error('generation_parameters not found in API response details.');
+            }
+            const params = listDetails.generation_parameters;
 
             // Update Header
             listHeaderInfo.textContent = `${params.list_readable_id || 'N/A'} (Lang: ${params.language || 'N/A'} | CEFR: ${params.cefr_level || 'N/A'})`;
@@ -153,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setStatusMessage(result.message || 'Metadata updated successfully. Redirecting...', 'info');
                  // Redirect back to the view page after a short delay
                 setTimeout(() => {
-                    window.location.href = '/view-generated-lists'; // Use url_for in template if needed
+                    window.location.href = '/view-generated-word-lists'; // Corrected URL
                 }, 1500);
             } else {
                 setStatusMessage(`Error: ${result.message || 'Failed to update metadata.'}`, 'error');

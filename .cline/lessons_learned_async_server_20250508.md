@@ -1,5 +1,12 @@
 # Lessons Learned: Async Server Setup (Flask + ASGI) - 2025-05-08
 
+> **NOTE (2025-05-10):** The project is being migrated from Flask to FastAPI.
+> Much of the specific Flask + `a2wsgi` + Uvicorn/Hypercorn setup described below
+> is superseded by the native ASGI capabilities of FastAPI.
+> The general problem of needing an ASGI server for async operations remains relevant,
+> but the implementation details will change with FastAPI.
+> See `.cline/lessons_learned_fastapi_migration_20250510.md` for the new direction.
+
 ## Context
 
 The application uses Flask with routes that need to perform asynchronous operations, specifically calling async libraries for Google Generative AI (LLM) and Google Cloud Firestore (database). The initial setup used Flask's default WSGI server (Werkzeug) or Gunicorn (also WSGI).
@@ -8,8 +15,9 @@ The application uses Flask with routes that need to perform asynchronous operati
 
 Running async operations directly within standard Flask routes under a WSGI server led to `RuntimeError: Event loop is closed` exceptions. This occurs because WSGI servers are typically synchronous and don't manage the asyncio event loop required by the async libraries.
 
-## Solution: Transition to ASGI
+## Solution: Transition to ASGI (Flask Context - Now Superseded by FastAPI Migration)
 
+<!--
 The solution was to switch the application from running on a WSGI server to an ASGI server, which is designed to handle asynchronous operations.
 
 **Key Components:**
@@ -32,8 +40,9 @@ The solution was to switch the application from running on a WSGI server to an A
 **Dependencies:**
 
 *   Ensure `uvicorn` and `a2wsgi` are added to `requirements.txt` with specific versions.
+-->
 
-## Related Issues & Learnings
+## Related Issues & Learnings (Some still relevant, some Flask-specific)
 
 *   **Port Conflicts (`Address already in use`):** When using `--reload`, the server process might not release the port immediately upon restart, causing `[Errno 98] Address already in use`.
     *   **Solution:** Development server scripts (`devserver.sh`) should include robust logic to kill existing processes on the target port before starting the new server. Using `lsof -t -i:<port>` to find the PID and `kill -9 <PID>` is more forceful than a simple `kill`. Adding a short `sleep 1` after killing can also help give the OS time to release the port.

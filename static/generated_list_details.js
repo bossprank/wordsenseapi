@@ -59,51 +59,67 @@ document.addEventListener('DOMContentLoaded', () => {
             const listData = await response.json();
             console.log("Received data:", listData);
 
-            const params = listData.generation_parameters;
+            if (!listData || !listData.details || !listData.summary) {
+                console.error("API response is missing 'details' or 'summary' fields.", listData);
+                paramsDetailsDiv.innerHTML = '<p class="text-danger">Error: Incomplete data received from server.</p>';
+                wordItemsTableBody.innerHTML = '<tr><td colspan="3" class="text-danger">Error: Incomplete data received.</td></tr>';
+                pageTitle.textContent = 'Error Loading Details';
+                listHeaderInfo.textContent = 'Error';
+                listStatusBadge.textContent = 'Error';
+                return;
+            }
+
+            const generationParams = listData.details.generation_parameters;
+            const summaryParams = listData.summary;
 
             // Update Header
-            pageTitle.textContent = `Details for ${params.list_readable_id || 'List'}`;
-            listHeaderInfo.textContent = `${params.list_readable_id || 'N/A'} | Lang: ${params.language || 'N/A'} | CEFR: ${params.cefr_level || 'N/A'} | Cat: ${params.list_category_display_name || params.list_category_id || 'N/A'}`;
-            listStatusBadge.textContent = params.status || 'N/A';
+            pageTitle.textContent = `Details for ${(summaryParams && summaryParams.list_readable_id) || 'List'}`;
+            listHeaderInfo.textContent = `${(summaryParams && summaryParams.list_readable_id) || 'N/A'} | Lang: ${(summaryParams && summaryParams.language) || 'N/A'} | CEFR: ${(summaryParams && summaryParams.cefr_level) || 'N/A'} | Cat: ${(summaryParams && summaryParams.list_category_display_name) || (generationParams && generationParams.list_category_id) || 'N/A'}`;
+            listStatusBadge.textContent = (summaryParams && summaryParams.status) || 'N/A';
             // Add appropriate badge class based on status? (e.g., badge-success, badge-warning)
             listStatusBadge.className = `badge badge-info`; // Default badge
 
             // Populate Generation Parameters
             paramsDetailsDiv.innerHTML = ''; // Clear loading
-            const dl = document.createElement('dl');
-            dl.className = 'row';
+            if (generationParams) {
+                const dl = document.createElement('dl');
+                dl.className = 'row';
 
-            // Define order and labels (can be extended)
-            const paramOrder = [
-                'list_readable_id', 'status', 'language', 'cefr_level', 'list_category_id', 'list_category_display_name',
-                'requested_word_count', 'generated_word_count', 'include_english_translation',
-                'generation_timestamp', 'last_status_update_timestamp', 'generated_by', 'reviewed_by', 'admin_notes',
-                'source_model', 'gemini_temperature', 'gemini_top_p', 'gemini_top_k', 'gemini_max_output_tokens',
-                'gemini_stop_sequences', 'gemini_response_mime_type', 'gemini_response_schema_used',
-                'base_instruction_file_ref', 'custom_instruction_file_ref', 'ui_text_refinements',
-                'final_llm_prompt_text_sent'
-            ];
-            
-            paramOrder.forEach(key => {
-                if (params.hasOwnProperty(key)) {
-                    const dt = document.createElement('dt');
-                    dt.className = 'col-sm-3';
-                    dt.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); // Format key nicely
+                // Define order and labels (can be extended)
+                const paramOrder = [
+                    'list_readable_id', 'status', 'language', 'cefr_level', 'list_category_id', 
+                    // 'list_category_display_name', // This is in summary, not generationParams
+                    'requested_word_count', 'generated_word_count', 'include_english_translation',
+                    'generation_timestamp', 'last_status_update_timestamp', 'generated_by', 'reviewed_by', 'admin_notes',
+                    'source_model', 'gemini_temperature', 'gemini_top_p', 'gemini_top_k', 'gemini_max_output_tokens',
+                    'gemini_stop_sequences', 'gemini_response_mime_type', 'gemini_response_schema_used',
+                    'base_instruction_file_ref', 'custom_instruction_file_ref', 'ui_text_refinements',
+                    'final_llm_prompt_text_sent'
+                ];
+                
+                paramOrder.forEach(key => {
+                    if (generationParams.hasOwnProperty(key)) {
+                        const dt = document.createElement('dt');
+                        dt.className = 'col-sm-3';
+                        dt.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); // Format key nicely
 
-                    const dd = document.createElement('dd');
-                    dd.className = 'col-sm-9';
-                    dd.innerHTML = formatValue(params[key]); // Use innerHTML for pre tags
+                        const dd = document.createElement('dd');
+                        dd.className = 'col-sm-9';
+                        dd.innerHTML = formatValue(generationParams[key]); // Use innerHTML for pre tags
 
-                    dl.appendChild(dt);
-                    dl.appendChild(dd);
-                }
-            });
-            paramsDetailsDiv.appendChild(dl);
+                        dl.appendChild(dt);
+                        dl.appendChild(dd);
+                    }
+                });
+                paramsDetailsDiv.appendChild(dl);
+            } else {
+                paramsDetailsDiv.innerHTML = '<p class="text-info">No generation parameters found.</p>';
+            }
 
 
             // Populate Word Items Table
             wordItemsTableBody.innerHTML = ''; // Clear loading
-            const words = listData.word_items || [];
+            const words = listData.details.word_items || [];
             wordCountSpan.textContent = words.length;
 
             if (words.length === 0) {

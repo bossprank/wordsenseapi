@@ -335,6 +335,7 @@ class GeneratedWordListParameters(BaseModel):
     admin_notes: Optional[str] = Field(default=None, description="Optional internal notes by an administrator.")
     requested_word_count: int = Field(..., description="The number of words initially requested.")
     generated_word_count: Optional[int] = Field(default=None, description="The actual number of unique word items generated.")
+    # enriched_word_ids: Optional[List[str]] = Field(default_factory=list, description="List of Firestore IDs for the fully enriched Word objects associated with this list.") # Field removed
     
     base_instruction_file_ref: str = Field(..., description="Path/reference to the base instruction file.")
     custom_instruction_file_ref: Optional[str] = Field(default=None, description="Path/reference to a custom instruction file.")
@@ -357,12 +358,62 @@ class GeneratedWordListParameters(BaseModel):
     reviewed_by: Optional[str] = Field(default=None, description="User ID of the admin who last reviewed/changed status.")
 
 class WordItem(BaseModel):
-    """Represents a single generated word item in a list."""
-    model_config = ConfigDict(extra='allow') # Allow extra fields as structure can vary
+    """Represents a single generated word item in a list, as expected from LLM output."""
+    # model_config = ConfigDict(extra='allow') # Changed to 'forbid'
+    model_config = ConfigDict(extra='forbid', populate_by_name=True) # Ensure populate_by_name for aliases
 
-    headword: str = Field(..., description="The generated headword in the target language.")
-    translation_en: Optional[str] = Field(default=None, description="English translation, if requested/provided.")
-    # Other fields can be dynamically added based on Gemini's JSON output.
+    word: str = Field(..., description="The generated word in the target language.", alias="headword") # Alias for consistency if LLM uses 'word'
+    part_of_speech: Optional[str] = Field(default=None, description="e.g., 'noun', 'verb'")
+    definition: Optional[str] = Field(default=None, description="A concise definition of the word.")
+    example_sentence: Optional[str] = Field(default=None, description="An example sentence using the word.")
+    difficulty_level: Optional[int] = Field(default=None, description="1-5, 5 being most difficult")
+    cefr_level: Optional[str] = Field(default=None, description="e.g., 'A1', 'B2'") # Consider Literal if values are fixed
+    
+    # Define a specific model for translations to ensure additionalProperties: false
+    class WordItemTranslations(BaseModel):
+        model_config = ConfigDict(extra='forbid')
+        es: Optional[str] = Field(default=None, description="Spanish translation")
+        en: Optional[str] = Field(default=None, description="English translation")
+        # Add other common languages if the LLM might provide them based on context
+        # Or, make the prompt very specific about *only* providing 'es'.
+
+    translations: Optional[WordItemTranslations] = Field(default=None, description="Translations into other languages.")
+    # translation_en: Optional[str] = Field(default=None, description="English translation, if requested/provided.") # Covered by translations dict
+
+    # If LLM might use 'headword' instead of 'word', ensure validation handles it.
+    # Pydantic v2 with populate_by_name and alias in Field should handle this.
+    # Alternatively, a root_validator could map 'headword' to 'word' if needed.
+
+# --- Simplified Models for Direct LLM Output (Word List Generation) ---
+# These models define the minimal JSON structure we expect directly from the LLM
+# for the initial word list generation, focusing only on headword and English translation.
+
+class SimpleWordEntry(BaseModel):
+    """Represents a single word-translation pair expected directly from LLM."""
+    model_config = ConfigDict(extra='forbid')
+    headword: str = Field(..., description="The vocabulary word in the target language.")
+    translation_en: Optional[str] = Field(default=None, description="The English translation of the headword.")
+
+class LlmSimpleWordList(BaseModel):
+    """
+    Expected simple JSON structure from LLM for word list generation,
+    containing a list of headword-translation_en pairs.
+    This corresponds to the schema in 'llm_prompts/default_word_list_schema.json'.
+    """
+    model_config = ConfigDict(extra='forbid')
+    words: List[SimpleWordEntry] = Field(..., description="List of generated word-translation pairs.")
+
+
+# --- More Complex/Detailed Models (Potentially for LLM or internal use) ---
+
+class LlmWordListResponse(BaseModel):
+    """
+    Expected structure from LLM for word list generation if it were to provide more detailed WordItems directly.
+    NOTE: For the current simplified approach, LlmSimpleWordList is used for direct LLM output.
+    This model (LlmWordListResponse with full WordItem) might be used if LLM capabilities or requirements change.
+    """
+    model_config = ConfigDict(extra='forbid')
+    words: List[WordItem] = Field(..., description="List of generated word items.")
 
 class GeneratedWordList(BaseModel):
     """Main model for a document in the GeneratedWordLists Firestore collection."""
@@ -370,7 +421,7 @@ class GeneratedWordList(BaseModel):
 
     list_firestore_id: Optional[str] = Field(default=None, description="Firestore document ID (not stored as a field in the document itself).")
     generation_parameters: GeneratedWordListParameters
-    word_items: List[WordItem] = Field(default_factory=list)
+    word_items: List[WordItem] = Field(default_factory=list, description="List of simple word items, potentially to be deprecated or used for quick preview.") # Clarified purpose
 
     # To be used when fetching from Firestore, to populate list_firestore_id
     @model_validator(mode='before')
@@ -422,6 +473,12 @@ class GenerateListInput(BaseModel):
     admin_notes: Optional[str] = Field(default=None, description="Optional internal notes by an administrator.")
     generated_by: str = Field(..., description="User ID of the admin who initiated generation.") # Assuming this comes from authenticated user context
 
+# --- Schemas for Vocabulary List Generation & Management ---
+
+class InstructionFile(BaseModel):
+    file_path: str
+    content: str
+
 # --- Input Schema for Update List Metadata API ---
 
 class UpdateListMetadataInput(BaseModel):
@@ -432,11 +489,12 @@ class UpdateListMetadataInput(BaseModel):
     list_category_id: Optional[str] = Field(default=None, description="New category ID.")
     admin_notes: Optional[str] = Field(default=None, description="Updated admin notes (can be empty string to clear).")
     reviewed_by: Optional[str] = Field(default=None, description="User ID of the reviewer.")
+    # enriched_word_ids: Optional[List[str]] = Field(default=None, description="Update the list of enriched word IDs.") # Field removed
 
     # Ensure at least one field is provided for update
     @model_validator(mode='before')
     @classmethod
     def check_at_least_one_value(cls, data: Any) -> Any:
-        if isinstance(data, dict) and not any(data.values()):
+        if isinstance(data, dict) and not any(v is not None for v in data.values()): # Check for any non-None value
             raise ValueError("At least one field must be provided for update.")
         return data

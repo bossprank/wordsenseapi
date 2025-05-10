@@ -26,13 +26,16 @@ import json
 import sys
 import time
 import asyncio
-import logging # Use standard logging
+from loguru import logger # Use Loguru logger
 import re # Import regex for cleaning
 from typing import Type, TypeVar, Optional, Union, List, Dict, Any
 from pydantic import BaseModel, ValidationError
 
+# Import necessary models
+from models import GenerateListInput, WordItem, LlmWordListResponse, LlmSimpleWordList, SimpleWordEntry # Added LlmSimpleWordList, SimpleWordEntry
+
 # --- Get Logger ---
-logger = logging.getLogger(__name__) # Get logger instance for this module
+# logger = logging.getLogger(__name__) # No longer needed, Loguru's logger is imported directly
 
 # Import the config module, but defer accessing its attributes
 try:
@@ -713,3 +716,75 @@ if __name__ == '__main__':
        if "cannot run nested event loops" in str(e): logger.warning("Could not run async main directly (likely due to existing event loop).")
        else: logger.exception("RuntimeError during standalone test execution:"); raise e
     except Exception as e: logger.exception("Unexpected error during standalone test execution:")
+
+async def generate_word_list(input_data: GenerateListInput, final_prompt_text: str) -> Union[List[WordItem], Dict[str, Any]]:
+    """
+    Generates a word list using the LLM based on GenerateListInput.
+    Returns a list of WordItem objects on success, or an error dictionary on failure.
+    """
+    logger.debug(f"[generate_word_list] Entered function for language: {input_data.language}, level: {input_data.cefr_level}.")
+    logger.debug(f"[generate_word_list] input_data: {input_data.model_dump_json(indent=2)}")
+    logger.debug(f"[generate_word_list] final_prompt_text (first 500 chars): {final_prompt_text[:500]}")
+
+    logger.info(f"Initiating JSON-based word list generation for language: {input_data.language}, level: {input_data.cefr_level}")
+
+    # Define the response schema based on LlmSimpleWordList
+    # This schema will be passed to generate_structured_content
+    # The schema could also be loaded from 'llm_prompts/default_word_list_schema.json'
+    # For consistency with Pydantic models, using model_json_schema() is robust.
+    json_schema_for_llm = LlmSimpleWordList.model_json_schema()
+
+    llm_structured_result = await generate_structured_content(
+        prompt=final_prompt_text,
+        response_model=LlmSimpleWordList, # Expecting the simple list structure
+        provider=input_data.provider or config.DEFAULT_LLM_PROVIDER,
+        model_name=input_data.source_model,
+        temperature=input_data.gemini_temperature,
+        top_p=input_data.gemini_top_p,
+        top_k=input_data.gemini_top_k,
+        max_output_tokens=input_data.gemini_max_output_tokens,
+        stop_sequences=input_data.gemini_stop_sequences,
+        response_mime_type="application/json", # Explicitly request JSON
+        response_schema=json_schema_for_llm # Provide the schema for the simple list
+    )
+
+    if isinstance(llm_structured_result, LlmSimpleWordList):
+        logger.info(f"LLM successfully returned and validated LlmSimpleWordList with {len(llm_structured_result.words)} entries.")
+        word_items: List[WordItem] = []
+        for simple_entry in llm_structured_result.words:
+            try:
+                # Create the more complex WordItem, mapping fields from SimpleWordEntry
+                # and setting others to None or defaults.
+                item_data = {
+                    "word": simple_entry.headword, # Map 'headword' from SimpleWordEntry to 'word' in WordItem
+                    "part_of_speech": None,
+                    "definition": None,
+                    "example_sentence": None,
+                    "difficulty_level": None,
+                    "cefr_level": input_data.cefr_level, # Can populate from input if desired
+                    "translations": None
+                }
+                if simple_entry.translation_en:
+                    # Ensure WordItem.translations.en is populated
+                    item_data["translations"] = WordItem.WordItemTranslations(en=simple_entry.translation_en)
+
+                word_item_obj = WordItem.model_validate(item_data)
+                word_items.append(word_item_obj)
+            except ValidationError as e:
+                logger.warning(f"Failed to validate WordItem for simple entry '{simple_entry.headword}': {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error processing simple entry '{simple_entry.headword}': {e}")
+        
+        logger.info(f"Successfully converted {len(word_items)} SimpleWordEntry items to full WordItem objects.")
+        return word_items
+
+    elif isinstance(llm_structured_result, dict) and 'error' in llm_structured_result:
+        logger.error(f"LLM generation failed: {llm_structured_result.get('error')}. Raw text (if any): {llm_structured_result.get('raw_text')}")
+        return llm_structured_result # Propagate the error dictionary
+    else:
+        error_detail = "LLM did not return a LlmSimpleWordList object as expected."
+        if llm_structured_result is None:
+            error_detail = "LLM returned None when expecting LlmSimpleWordList."
+        
+        logger.error(f"LLM generation failed: {error_detail}. Full LLM result: {llm_structured_result}")
+        return {"error": error_detail, "raw_text": str(llm_structured_result) if llm_structured_result is not None else None}

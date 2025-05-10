@@ -73,10 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const listData = await response.json();
-            const params = listData.generation_parameters;
+            
+            // Correctly access nested generation_parameters
+            const params = listData.details ? listData.details.generation_parameters : null;
 
             if (!params) {
-                throw new Error("Original list data does not contain generation parameters.");
+                console.error("Original list data structure issue or missing generation_parameters:", listData);
+                throw new Error("Original list data does not contain 'details.generation_parameters'.");
             }
 
             console.log("Original generation parameters:", params);
@@ -179,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Submitting data:", data); // For debugging
 
         try {
-            const response = await fetch('/api/v1/generated-lists', {
+            const response = await fetch('/api/v1/generated-lists/generate', { // Corrected URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -193,8 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setStatusMessage(`Success! List generated. ID: ${result.list_readable_id}. Redirecting...`, 'info');
                 // Redirect to the view page after a short delay
                 setTimeout(() => {
-                    // TODO: Update this URL when the view page route is created
-                    window.location.href = '/'; // Redirect to home for now
+                    window.location.href = '/view-generated-word-lists'; // Redirect to the view list page
                 }, 2000);
             } else {
                 setStatusMessage(`Error: ${result.message || 'Failed to generate list.'}`, 'error');

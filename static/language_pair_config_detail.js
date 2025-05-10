@@ -1,7 +1,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('config-detail-form');
     const configIdField = document.getElementById('config_id');
-    const configId = configIdField.value;
+    const formModeField = document.getElementById('form-mode');
+    
+    const configId = configIdField.value; // This will be empty if mode is 'add'
+    const formMode = formModeField.value; // 'add' or 'edit'
+
+    const langPairSourceInput = document.getElementById('language_pair_source');
+    const langPairTargetInput = document.getElementById('language_pair_target');
+    const configKeyInput = document.getElementById('config_key');
 
     // Function to parse datetime-local string to ISO string
     function formatDateTimeForAPI(dateTimeLocalStr) {
@@ -23,7 +30,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    if (configId && configId !== 'new') {
+    if (formMode === 'edit' && configId) {
+        // Disable key fields in edit mode
+        langPairSourceInput.disabled = true;
+        langPairTargetInput.disabled = true;
+        configKeyInput.disabled = true;
+
         // Fetch existing config data for editing
         fetch(`/api/language-pair-configurations/${configId}`)
             .then(response => {
@@ -76,8 +88,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
 
-        const method = (configId && configId !== 'new') ? 'PUT' : 'POST';
-        const url = (configId && configId !== 'new') ? `/api/language-pair-configurations/${configId}` : '/api/language-pair-configurations';
+        const method = (formMode === 'edit') ? 'PUT' : 'POST';
+        const url = (formMode === 'edit' && configId) ? `/api/language-pair-configurations/${configId}` : '/api/language-pair-configurations';
+
+        // For 'add' mode (POST), the payload should not contain an 'id' field.
+        // The LanguagePairConfiguration model has 'id' as Optional, so it's fine if not present.
+        // The backend API for POST should not expect 'id'.
 
         try {
             const response = await fetch(url, {

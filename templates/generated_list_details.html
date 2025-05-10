@@ -9,7 +9,7 @@
             <h1 id="page-title">Word List Details</h1>
         </div>
         <div class="col-sm-6">
-            <a href="{{ url_for('view_generated_lists_page') }}" class="btn btn-secondary float-sm-right">
+            <a href="{{ url_for('html.view_generated_word_lists') }}" class="btn btn-secondary float-sm-right">
                 <i class="fas fa-arrow-left"></i> Back to All Lists
             </a>
         </div>
@@ -57,7 +57,7 @@
 {# Include necessary JS file #}
 {# Pass list_firestore_id from Flask route to JS #}
 <script>
-    const LIST_FIRESTORE_ID = "{{ list_firestore_id }}"; 
+    const LIST_FIRESTORE_ID = "{{ list_id }}"; 
 </script>
 <script src="{{ url_for('static', filename='generated_list_details.js') }}"></script> 
 {% endblock %}

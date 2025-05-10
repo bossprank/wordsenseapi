@@ -1,5 +1,12 @@
 # Lessons Learned: Debugging Async Flask App (2025-05-08)
 
+> **NOTE (2025-05-10):** The project is being migrated from Flask to FastAPI.
+> Many lessons here regarding LLM interaction, prompting, schema handling, and general debugging remain valuable.
+> However, specific discussions and solutions related to managing async operations and event loops
+> within the Flask + `a2wsgi` + Uvicorn/Hypercorn environment (particularly in Point 2 and 3)
+> are superseded by FastAPI's native async capabilities.
+> See `.cline/lessons_learned_fastapi_migration_20250510.md` for the new direction.
+
 **Context:** Debugging 500 errors related to Firestore database writes and LLM calls within a Flask application that uses asynchronous operations (`async def` routes, `google-generativeai`, `google-cloud-firestore` async client).
 
 **Initial Problem:**
@@ -21,12 +28,16 @@
 3.  **`RuntimeError: Event loop is closed` (Firestore & LLM):**
     *   **Issue:** This error occurred first during Firestore writes (`await doc_ref.set()`) and later during LLM calls (`await model.generate_content_async()`).
     *   **Cause:** Using Flask's default Werkzeug server, `async def` views are often run in a temporary event loop via `asyncio.run()`. Global/shared async client instances (like the Firestore `AsyncClient` or potentially underlying clients used by `google-generativeai`) initialized in one request's loop become invalid when that loop closes, causing errors in subsequent requests trying to reuse the client.
-    *   **Fix Attempt 1:** Modify `firestore_client.py` to create a *new* `AsyncClient` instance per request (`get_db_client`). This fixed the Firestore write error but the LLM call still failed with the same error.
-    *   **Fix Attempt 2 (Recommended):** Switch from Werkzeug/`python app.py` to running the application under a proper ASGI server setup that manages the event loop correctly across the application lifetime.
+    *   **Fix Attempt 1 (Flask Context):** Modify `firestore_client.py` to create a *new* `AsyncClient` instance per request (`get_db_client`). This fixed the Firestore write error but the LLM call still failed with the same error.
+    *   **Fix Attempt 2 (Recommended for Flask Context - Now Superseded by FastAPI Migration):**
+        <!--
+        Switch from Werkzeug/`python app.py` to running the application under a proper ASGI server setup that manages the event loop correctly across the application lifetime.
         *   Added `uvicorn` and `a2wsgi` dependencies.
         *   Wrapped the Flask `app` using `asgi_app = WSGIMiddleware(app)` in `app.py`.
         *   Changed run command to `uvicorn app:asgi_app --host 0.0.0.0 --port 5000 --reload`. (Initially tried `gunicorn -k uvicorn.workers.UvicornWorker` which still failed with `TypeError`).
-    *   **Lesson:** For Flask applications heavily using `async`/`await` and async libraries, running under an ASGI server (like Uvicorn) with appropriate WSGI-to-ASGI middleware (like `a2wsgi`) is crucial for stable event loop management. Avoid sharing async client instances across requests when using Flask's default server.
+        -->
+        _The solution at the time for Flask involved transitioning to an ASGI server with `a2wsgi`. FastAPI, being natively ASGI, will not require this specific bridging setup._
+    *   **Lesson (General):** For applications heavily using `async`/`await` and async libraries, running under an ASGI server (like Uvicorn/Hypercorn) is crucial for stable event loop management. _(With FastAPI, this is the default way of running the application)._ Avoid sharing async client instances incorrectly across requests/tasks, especially with simpler WSGI servers.
 
 4.  **LLM JSON Output Issues:**
     *   **Issue:** LLM (Gemini 1.5 Flash) returned plain text instead of JSON, despite `response_mime_type="application/json"` and `response_schema` being provided. This caused `parse_word_items` to fail.

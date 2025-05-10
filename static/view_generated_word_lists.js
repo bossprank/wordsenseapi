@@ -36,16 +36,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // Populate Categories
             options.categories.forEach(cat => {
                 const option = document.createElement('option');
-                option.value = cat.value; // category_id
-                option.textContent = cat.label; // display_name
+                option.value = cat.id; // Corrected: use cat.id
+                option.textContent = cat.name; // Corrected: use cat.name
                 categorySelect.appendChild(option);
             });
 
             // Populate Statuses
-            options.statuses.forEach(status => {
+            options.statuses.forEach(statusObj => { // Renamed to statusObj for clarity
                 const option = document.createElement('option');
-                option.value = status;
-                option.textContent = status;
+                option.value = statusObj.id; // Corrected: use statusObj.id
+                option.textContent = statusObj.name; // Corrected: use statusObj.name
                 statusSelect.appendChild(option);
             });
 
@@ -84,10 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Action buttons (placeholders for URLs)
                 // TODO: Update URLs when detail/edit routes are created
-                const detailsUrl = `/list-details/${list.list_firestore_id}`;
+                const detailsUrl = `/generated-list-details/${list.list_firestore_id}`; // Corrected URL
                 const editMetaUrl = `/edit-list-metadata/${list.list_firestore_id}`;
                 // Pass the original list ID as a query parameter for regeneration
-                const regenUrl = `/generate-new-list?regenerate_id=${list.list_firestore_id}`;
+                const regenUrl = `/generate-new-word-list?regenerate_id=${list.list_firestore_id}`; // Corrected base path
 
                 row.innerHTML = `
                     <td>${list.list_readable_id || 'N/A'}</td>
