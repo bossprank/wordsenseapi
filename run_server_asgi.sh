@@ -10,5 +10,5 @@ echo "Port 5000 cleared or was already free."
 echo "Activating virtual environment..."
 source .venv/bin/activate
 
-echo "Starting Uvicorn server for asgi_app on http://0.0.0.0:5000 with auto-reload..."
-uvicorn app:asgi_app --host 0.0.0.0 --port 5000 --reload
+echo "Starting Uvicorn server for main_fastapi:app on http://0.0.0.0:8080 with auto-reload..."
+uvicorn main_fastapi:app --host 0.0.0.0 --port 8080 --reload

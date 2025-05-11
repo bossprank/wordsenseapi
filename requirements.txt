@@ -19,6 +19,7 @@ loguru==0.7.2 # Added for simplified logging
 pip # Usually managed separately, but can be listed
 autopep8 # User added formatter
 flake8==7.1.0 # Linter
+pytest==8.2.0 # Test framework
 
 # Deployment (Optional)
 gunicorn==22.0.0 # WSGI Server

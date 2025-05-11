@@ -9,7 +9,7 @@
             <h1 id="page-title">Edit List Metadata</h1>
         </div>
         <div class="col-sm-6">
-            <a href="{{ url_for('html.view_generated_word_lists') }}" class="btn btn-secondary float-sm-right">
+            <a href="{{ request.url_for('route_view_generated_lists_page') }}" class="btn btn-secondary float-sm-right">
                 <i class="fas fa-arrow-left"></i> Back to All Lists
             </a>
         </div>
@@ -64,7 +64,7 @@
 
             <div class="card-footer">
                 <button type="submit" class="btn btn-warning">Save Changes</button>
-                <a href="{{ url_for('html.view_generated_word_lists') }}" class="btn btn-secondary">Cancel</a>
+                <a href="{{ request.url_for('route_view_generated_lists_page') }}" class="btn btn-secondary">Cancel</a>
                 <div id="status-message" class="mt-3"></div>
             </div>
         </form>
@@ -77,5 +77,5 @@
 <script>
     const LIST_FIRESTORE_ID = "{{ list_id }}"; 
 </script>
-<script src="{{ url_for('static', filename='edit_list_metadata.js') }}"></script> 
+<script src="{{ request.url_for('static', path='edit_list_metadata.js') }}"></script> 
 {% endblock %}

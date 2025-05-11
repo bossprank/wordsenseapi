@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to fetch and display configurations
     async function loadConfigs() {
         try {
-            const response = await fetch('/api/language-pair-configurations');
+            const response = await fetch('/api/language-pairs');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const configId = event.target.dataset.id;
             if (confirm(`Are you sure you want to delete configuration ID: ${configId}?`)) {
                 try {
-                    const response = await fetch(`/api/language-pair-configurations/${configId}`, {
+                    const response = await fetch(`/api/language-pairs/${configId}`, {
                         method: 'DELETE',
                     });
                     if (!response.ok) {

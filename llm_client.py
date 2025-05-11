@@ -185,7 +185,7 @@ async def generate_structured_content(
              
         # Use specific model if provided, otherwise use default from config
         model_to_use = model_name or config.DEFAULT_GOOGLE_MODEL
-        logger.debug(f"Using Google AI model: {model_to_use}")
+        # logger.debug(f"Using Google AI model: {model_to_use}") # Reduced verbosity
         result = await _generate_googleai(
             prompt=prompt,
             response_model=response_model,
@@ -209,7 +209,7 @@ async def generate_structured_content(
             return {"error": "DeepSeek client not configured", "raw_text": None}
         # Use specific model if provided, otherwise use default from config
         model_to_use = model_name or config.DEFAULT_DEEPSEEK_MODEL
-        logger.debug(f"Using DeepSeek model: {model_to_use}")
+        # logger.debug(f"Using DeepSeek model: {model_to_use}") # Reduced verbosity
         result = await _generate_deepseek(prompt, response_model, model_to_use, temperature, max_retries, initial_delay, system_prompt)
 
     else:
@@ -224,16 +224,16 @@ async def generate_structured_content(
 # --- Helper to Clean LLM Output ---
 def _clean_llm_json_output(raw_text: str, expected_model_name: str) -> str:
     """Attempts to extract valid JSON from raw LLM text output."""
-    logger.debug(f"Attempting to clean raw text (length {len(raw_text)}): {raw_text[:200]}...")
+    # logger.debug(f"Attempting to clean raw text (length {len(raw_text)}): {raw_text[:200]}...") # Can be verbose
     cleaned_text = raw_text.strip()
 
     # Basic Markdown code block removal
     if cleaned_text.startswith("```json") and cleaned_text.endswith("```"):
-        logger.debug("Removing ```json markdown.")
+        # logger.debug("Removing ```json markdown.") # Minor detail
         cleaned_text = cleaned_text[7:-3].strip()
     elif cleaned_text.startswith("```") and cleaned_text.endswith("```"):
-         logger.debug("Removing ``` markdown.")
-         cleaned_text = cleaned_text[3:-3].strip()
+        # logger.debug("Removing ``` markdown.") # Minor detail
+        cleaned_text = cleaned_text[3:-3].strip()
 
     # Sometimes models add introductory text before the JSON. Try to find the first '{' or '['
     first_brace = cleaned_text.find('{')
@@ -258,7 +258,7 @@ def _clean_llm_json_output(raw_text: str, expected_model_name: str) -> str:
     # end_index = -1
     # ... complex logic to find matching bracket/brace ...
 
-    logger.debug(f"Cleaned text (first 200 chars): {cleaned_text[:200]}...")
+    # logger.debug(f"Cleaned text (first 200 chars): {cleaned_text[:200]}...") # Can be verbose
     return cleaned_text
 
 # --- Provider Specific Functions ---
@@ -280,7 +280,7 @@ async def _generate_googleai(
 ) -> Optional[Union[T, str, Dict[str, Any]]]:
     """Handles generation using the google-generativeai library."""
     logger.info(f"--- Calling Google AI ({model_name}) ---")
-    logger.debug(f"Params: temp={temperature}, top_p={top_p}, top_k={top_k}, max_tokens={max_output_tokens}, stop={stop_sequences}, mime={response_mime_type}, schema_provided={response_schema is not None}")
+    # logger.debug(f"Params: temp={temperature}, top_p={top_p}, top_k={top_k}, max_tokens={max_output_tokens}, stop={stop_sequences}, mime={response_mime_type}, schema_provided={response_schema is not None}") # Verbose
 
     contents = []
     # Add system prompt if provided (as the first part of the first 'user' turn)
@@ -310,8 +310,8 @@ async def _generate_googleai(
         contents[-1]["parts"][-1] += json_instruction
 
     # Log full prompt being sent (mask API keys if they were accidentally included)
-    log_prompt = re.sub(r'key=[A-Za-z0-9_-]+', 'key=***MASKED***', contents[-1]["parts"][-1])
-    logger.debug(f"Google AI Request Prompt (User Turn):\n---PROMPT START---\n{log_prompt}\n---PROMPT END---")
+    # log_prompt = re.sub(r'key=[A-Za-z0-9_-]+', 'key=***MASKED***', contents[-1]["parts"][-1]) # Keep this if prompt structure is complex
+    # logger.debug(f"Google AI Request Prompt (User Turn):\n---PROMPT START---\n{log_prompt}\n---PROMPT END---") # Very verbose, consider removing for cleaner logs
 
 
     try:
@@ -326,7 +326,7 @@ async def _generate_googleai(
         # Add stop_sequences to config_params
         if stop_sequences is not None:
             config_params["stop_sequences"] = stop_sequences
-            logger.debug(f"Added stop_sequences to config_params: {stop_sequences}")
+            # logger.debug(f"Added stop_sequences to config_params: {stop_sequences}") # Minor detail
 
         # Handle response format and schema (effective_response_mime_type calculated earlier)
         if effective_response_mime_type:
@@ -334,12 +334,12 @@ async def _generate_googleai(
         if response_schema and effective_response_mime_type == "application/json":
             # Pass schema only if mime type is JSON
             config_params["response_schema"] = response_schema
-            logger.info(f"Using response_schema (type: {type(response_schema).__name__}) for Google AI model.")
+            # logger.info(f"Using response_schema (type: {type(response_schema).__name__}) for Google AI model.") # Good info, but can be verbose
         elif response_schema:
              logger.warning(f"response_schema provided but response_mime_type is '{effective_response_mime_type}', schema will be ignored by the API.")
 
         generation_config = GoogleGenerationConfig(**config_params)
-        logger.debug(f"Constructed GoogleGenerationConfig: {generation_config}")
+        # logger.debug(f"Constructed GoogleGenerationConfig: {generation_config}") # Verbose
         # --- End Construct GenerationConfig ---
 
 
@@ -381,8 +381,8 @@ async def _generate_googleai(
                     raw_text = response.text
                     if is_blocked and not raw_text: # Double check if candidate blocked but text is empty
                          logger.warning("Response candidate blocked and response.text is empty/None.")
-                    elif raw_text:
-                        logger.debug(f"Google AI Raw Response Text (Attempt {attempt + 1}) obtained via .text")
+                    # elif raw_text: # This debug log is very verbose if successful
+                        # logger.debug(f"Google AI Raw Response Text (Attempt {attempt + 1}) obtained via .text")
 
                 except ValueError as e_text_blocked:
                     # This exception is often raised when .text is accessed on a blocked response
@@ -391,7 +391,7 @@ async def _generate_googleai(
                     # Try extracting from parts as a fallback
                     try:
                         raw_text = "".join(part.text for part in response.parts if hasattr(part, 'text'))
-                        logger.debug(f"Google AI Raw Response Text (Attempt {attempt + 1}) obtained via parts fallback.")
+                        # logger.debug(f"Google AI Raw Response Text (Attempt {attempt + 1}) obtained via parts fallback.") # Verbose
                     except Exception as e_parts:
                         logger.warning(f"Google AI Warning: Could not extract text from parts either. Error: {e_parts}.")
                         raw_text = None
@@ -411,8 +411,8 @@ async def _generate_googleai(
                          return last_error
 
 
-                # <<< Log raw response at DEBUG level >>>
-                logger.debug(f"Google AI Raw Response Content (Attempt {attempt + 1}):\n---RESPONSE START---\n{raw_text}\n---RESPONSE END---")
+                # <<< Log raw response at DEBUG level >>> # This is very verbose, only enable if deep debugging LLM output
+                # logger.debug(f"Google AI Raw Response Content (Attempt {attempt + 1}):\n---RESPONSE START---\n{raw_text}\n---RESPONSE END---")
 
                 if raw_text is None or not raw_text.strip():
                     logger.warning(f"Google AI returned empty or None response text on attempt {attempt+1}.")
@@ -432,7 +432,7 @@ async def _generate_googleai(
                 try:
                     cleaned_text = _clean_llm_json_output(raw_text, response_model.__name__)
                     if not cleaned_text:
-                         raise json.JSONDecodeError("Cleaned text is empty", "", 0)
+                         raise json.JSONDecodeError("Cleaned text is empty", "", 0) # Error will be caught below
 
                     json_data = json.loads(cleaned_text)
                     validated_data = response_model.model_validate(json_data)
@@ -440,15 +440,15 @@ async def _generate_googleai(
                     return validated_data # Success!
 
                 except json.JSONDecodeError as e:
-                    logger.error(f"Google AI Error: Failed JSON parsing: {e}")
-                    logger.debug(f"Raw Text Before Parsing:\n{raw_text}\n---END RAW---")
+                    logger.error(f"Google AI Error: Failed JSON parsing: {e}. Raw text snippet: {raw_text[:200] if raw_text else 'None'}")
+                    # logger.debug(f"Raw Text Before Parsing:\n{raw_text}\n---END RAW---") # Redundant if snippet logged
                     last_error = {"error": f"Failed JSON parsing: {e}", "raw_text": raw_text}
 
                 except ValidationError as e:
                     logger.error(f"Google AI Error: Failed Pydantic validation ({response_model.__name__}): {e}")
-                    logger.debug(f"Raw Text Before Validation:\n{raw_text}\n---END RAW---")
-                    if cleaned_text: logger.debug(f"Cleaned Text Before Validation:\n{cleaned_text}\n---END CLEANED---")
-                    if json_data: logger.debug(f"Parsed JSON Data:\n{json.dumps(json_data, indent=2)}\n---END JSON---")
+                    # logger.debug(f"Raw Text Before Validation:\n{raw_text}\n---END RAW---") # Redundant
+                    # if cleaned_text: logger.debug(f"Cleaned Text Before Validation:\n{cleaned_text}\n---END CLEANED---") # Verbose
+                    # if json_data: logger.debug(f"Parsed JSON Data:\n{json.dumps(json_data, indent=2)}\n---END JSON---") # Verbose
                     last_error = {"error": f"Failed Pydantic validation: {e}", "raw_text": raw_text}
 
                 # Fall through to retry logic if JSON/Validation failed
@@ -497,6 +497,7 @@ async def _generate_deepseek(
     if not deepseek_client: return {"error": "DeepSeek client not initialized", "raw_text": None}
 
     logger.info(f"--- Calling DeepSeek ({model_name}) ---")
+    # No extensive debug logging for DeepSeek params for now, similar to Google AI
 
     messages: List[Dict[str, str]] = []
     effective_system_prompt = system_prompt or "You are a helpful assistant designed to output JSON."
@@ -516,7 +517,7 @@ async def _generate_deepseek(
     messages.append({"role": "system", "content": effective_system_prompt})
     messages.append({"role": "user", "content": prompt})
 
-    logger.debug(f"DeepSeek Request Messages:\n---MESSAGES START---\n{json.dumps(messages, indent=2)}\n---MESSAGES END---")
+    # logger.debug(f"DeepSeek Request Messages:\n---MESSAGES START---\n{json.dumps(messages, indent=2)}\n---MESSAGES END---") # Verbose
 
     current_delay = initial_delay
     last_error = None
@@ -544,10 +545,10 @@ async def _generate_deepseek(
                 raw_text = None
             else:
                 raw_text = response.choices[0].message.content
-                logger.debug(f"DeepSeek Raw Response Text (Attempt {attempt + 1}) obtained.")
+                # logger.debug(f"DeepSeek Raw Response Text (Attempt {attempt + 1}) obtained.") # Verbose
 
 
-            logger.debug(f"DeepSeek Raw Response Content (Attempt {attempt + 1}):\n---RESPONSE START---\n{raw_text}\n---RESPONSE END---")
+            # logger.debug(f"DeepSeek Raw Response Content (Attempt {attempt + 1}):\n---RESPONSE START---\n{raw_text}\n---RESPONSE END---") # Verbose
 
             if raw_text is None or not raw_text.strip():
                 logger.warning(f"DeepSeek returned empty or None response text on attempt {attempt+1}.")
@@ -566,7 +567,7 @@ async def _generate_deepseek(
             try:
                 cleaned_text = _clean_llm_json_output(raw_text, response_model.__name__)
                 if not cleaned_text:
-                    raise json.JSONDecodeError("Cleaned text is empty", "", 0)
+                    raise json.JSONDecodeError("Cleaned text is empty", "", 0) # Error will be caught below
 
                 json_data = json.loads(cleaned_text)
                 validated_data = response_model.model_validate(json_data)
@@ -574,18 +575,14 @@ async def _generate_deepseek(
                 return validated_data # Success!
 
             except json.JSONDecodeError as e:
-                logger.error(f"DeepSeek Error: Failed JSON parsing: {e}")
-                logger.debug(f"Raw Text Before Parsing:\n{raw_text}\n---END RAW---")
+                logger.error(f"DeepSeek Error: Failed JSON parsing: {e}. Raw text snippet: {raw_text[:200] if raw_text else 'None'}")
                 last_error = {"error": f"Failed JSON parsing: {e}", "raw_text": raw_text}
 
             except ValidationError as e:
                 logger.error(f"DeepSeek Error: Failed Pydantic validation ({response_model.__name__}): {e}")
-                logger.debug(f"Raw Text Before Validation:\n{raw_text}\n---END RAW---")
-                if cleaned_text: logger.debug(f"Cleaned Text Before Validation:\n{cleaned_text}\n---END CLEANED---")
-                if json_data: logger.debug(f"Parsed JSON Data:\n{json.dumps(json_data, indent=2)}\n---END JSON---")
                 last_error = {"error": f"Failed Pydantic validation: {e}", "raw_text": raw_text}
 
-            # Fall through to retry logic if JSON/Validation failed
+            # Fall through to retry logic if JSON/Validation failed (if last_error is set)
 
         # --- Handle OpenAI SDK / API Errors ---
         except RateLimitError as e:
@@ -722,17 +719,32 @@ async def generate_word_list(input_data: GenerateListInput, final_prompt_text: s
     Generates a word list using the LLM based on GenerateListInput.
     Returns a list of WordItem objects on success, or an error dictionary on failure.
     """
-    logger.debug(f"[generate_word_list] Entered function for language: {input_data.language}, level: {input_data.cefr_level}.")
-    logger.debug(f"[generate_word_list] input_data: {input_data.model_dump_json(indent=2)}")
-    logger.debug(f"[generate_word_list] final_prompt_text (first 500 chars): {final_prompt_text[:500]}")
-
     logger.info(f"Initiating JSON-based word list generation for language: {input_data.language}, level: {input_data.cefr_level}")
+    # logger.debug(f"[generate_word_list] input_data: {input_data.model_dump_json(indent=2)}") # Can be verbose
+    # logger.debug(f"[generate_word_list] final_prompt_text (first 500 chars): {final_prompt_text[:500]}") # Verbose, prompt structure is logged by generate_structured_content
 
     # Define the response schema based on LlmSimpleWordList
     # This schema will be passed to generate_structured_content
-    # The schema could also be loaded from 'llm_prompts/default_word_list_schema.json'
-    # For consistency with Pydantic models, using model_json_schema() is robust.
-    json_schema_for_llm = LlmSimpleWordList.model_json_schema()
+    # Prioritize schema from input_data if provided and valid JSON.
+    json_schema_for_llm = None
+    if input_data.gemini_response_schema_used:
+        if isinstance(input_data.gemini_response_schema_used, str):
+            try:
+                json_schema_for_llm = json.loads(input_data.gemini_response_schema_used)
+                logger.info("Using JSON schema provided in input_data (parsed from string).")
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse JSON schema string from input_data: {e}. Falling back to LlmSimpleWordList schema.")
+                json_schema_for_llm = LlmSimpleWordList.model_json_schema()
+        elif isinstance(input_data.gemini_response_schema_used, dict):
+            json_schema_for_llm = input_data.gemini_response_schema_used
+            logger.info("Using JSON schema provided in input_data (as dict).")
+        else:
+            logger.warning(f"Unexpected type for gemini_response_schema_used: {type(input_data.gemini_response_schema_used)}. Falling back.")
+            json_schema_for_llm = LlmSimpleWordList.model_json_schema()
+    else:
+        logger.info("No response schema in input_data, using LlmSimpleWordList.model_json_schema().")
+        json_schema_for_llm = LlmSimpleWordList.model_json_schema()
+
 
     llm_structured_result = await generate_structured_content(
         prompt=final_prompt_text,
@@ -745,7 +757,7 @@ async def generate_word_list(input_data: GenerateListInput, final_prompt_text: s
         max_output_tokens=input_data.gemini_max_output_tokens,
         stop_sequences=input_data.gemini_stop_sequences,
         response_mime_type="application/json", # Explicitly request JSON
-        response_schema=json_schema_for_llm # Provide the schema for the simple list
+        response_schema=json_schema_for_llm
     )
 
     if isinstance(llm_structured_result, LlmSimpleWordList):

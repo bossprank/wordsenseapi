@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Admin Panel{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='adminlte/css/adminlte.min.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="/static/adminlte/css/adminlte.min.css">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="hold-transition sidebar-mini layout-fixed {% block body_classes %}{% endblock %} {% if not is_index_page %}admin-page{% endif %}">
   <div class="wrapper">
@@ -17,7 +17,7 @@
           <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-          <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+          <a href="/" class="nav-link">Home</a>
         </li>
       </ul>
     </nav>
@@ -26,27 +26,27 @@
     <!-- Sidebar -->
     {% if is_index_page %}
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
-      <a href="{{ url_for('index') }}" class="brand-link">
+      <a href="/" class="brand-link">
         <span class="brand-text font-weight-light">WordSense Admin</span>
       </a>
       <div class="sidebar">
         <nav class="mt-2">
           <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
             <li class="nav-item">
-              <a href="{{ url_for('manage_categories_page') }}" class="nav-link">
+              <a href="/manage-categories" class="nav-link">
                 <i class="nav-icon fas fa-th"></i>
                 <p>Manage Categories</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{ url_for('manage_language_pairs_page') }}" class="nav-link">
+              <a href="/manage-language-pairs" class="nav-link">
                 <i class="nav-icon fas fa-language"></i>
                 <p>Language Pair Configs</p>
               </a>
             </li>
             {# New Link for Vocabulary Generation #}
             <li class="nav-item">
-              <a href="{{ url_for('view_generated_lists_page') }}" class="nav-link"> {# Route name TBD #}
+              <a href="/view-generated-word-lists" class="nav-link">
                 <i class="nav-icon fas fa-list-alt"></i>
                 <p>Vocabulary Lists</p>
               </a>
@@ -71,7 +71,7 @@
     </footer>
   </div>
 
-  <script src="{{ url_for('static', filename='adminlte/js/adminlte.min.js') }}"></script>
+  <script src="/static/adminlte/js/adminlte.min.js"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

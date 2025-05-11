@@ -74,12 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const listData = await response.json();
             
-            // Correctly access nested generation_parameters
-            const params = listData.details ? listData.details.generation_parameters : null;
+            // Access generation_parameters directly from listData
+            const params = listData.generation_parameters;
 
+            console.log("Value of params right before if-check:", params); // Added for debugging
             if (!params) {
-                console.error("Original list data structure issue or missing generation_parameters:", listData);
-                throw new Error("Original list data does not contain 'details.generation_parameters'.");
+                console.error("Original list data structure issue or missing generation_parameters. Expected 'generation_parameters' directly on listData object:", listData);
+                throw new Error("UNIQUE_ERROR_MSG_V3: Params object is falsy."); // Changed error message
             }
 
             console.log("Original generation parameters:", params);
@@ -191,9 +192,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const result = await response.json();
+            // More robust logging:
+            if (result && result.generation_parameters) {
+                console.log("API Response for /generate (result.generation_parameters):", JSON.stringify(result.generation_parameters, null, 2));
+            } else if (result) {
+                console.log("API Response for /generate (full result, no generation_parameters):", JSON.stringify(result, null, 2));
+            } else {
+                console.log("API Response for /generate: result is null or undefined.");
+            }
 
             if (response.ok) {
-                setStatusMessage(`Success! List generated. ID: ${result.list_readable_id}. Redirecting...`, 'info');
+                // Access nested property for list_readable_id
+                const readableId = result && result.generation_parameters ? result.generation_parameters.list_readable_id : 'undefined';
+                setStatusMessage(`Success! List generated. ID: ${readableId}. Redirecting...`, 'info');
                 // Redirect to the view page after a short delay
                 setTimeout(() => {
                     window.location.href = '/view-generated-word-lists'; // Redirect to the view list page

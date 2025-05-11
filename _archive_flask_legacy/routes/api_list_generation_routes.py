@@ -160,7 +160,7 @@ async def generate_list():
 
         # Combine instructions and refinements
         final_prompt_text_sent = f"{filled_base_instructions}\n\n{custom_instructions or ''}\n\n{input_data.ui_text_refinements or ''}".strip()
-        logger.debug(f"Final prompt text sent to LLM (first 500 chars): {final_prompt_text_sent[:500]}")
+        # logger.debug(f"Final prompt text sent to LLM (first 500 chars): {final_prompt_text_sent[:500]}") # Keep if issues with prompt construction
 
         # Generate readable ID
         readable_id = await generate_readable_id()
@@ -275,10 +275,9 @@ async def _generate_and_update_list(list_firestore_id: str, prompt_text: str, in
         status_update_successful = False # Default to false
         try:
             status_update_successful = await update_generated_list_metadata(list_firestore_id, {"status": "generating"})
-            logger.info(f"[_generate_and_update_list] Task {list_firestore_id}: update_generated_list_metadata call returned: {status_update_successful}")
+            logger.info(f"[_generate_and_update_list] Task {list_firestore_id}: update_generated_list_metadata call to set 'generating' status returned: {status_update_successful}")
         except Exception as e_update_meta:
             logger.exception(f"[_generate_and_update_list] Task {list_firestore_id}: EXCEPTION during 'update_generated_list_metadata' for status 'generating':")
-            # Try to set status to error directly here if the call itself failed catastrophically
             try:
                 await update_generated_list_metadata(list_firestore_id, {"status": "error", "admin_notes": f"EXCEPTION during initial status update: {str(e_update_meta)}"})
             except Exception as e_set_error_status:
@@ -288,27 +287,25 @@ async def _generate_and_update_list(list_firestore_id: str, prompt_text: str, in
         if status_update_successful:
             logger.info(f"[_generate_and_update_list] Task {list_firestore_id}: Successfully updated status to 'generating'.")
         else:
-            logger.error(f"[_generate_and_update_list] Task {list_firestore_id}: Failed to update status to 'generating' (update_generated_list_metadata returned False). Aborting task.")
+            logger.error(f"[_generate_and_update_list] Task {list_firestore_id}: Failed to update status to 'generating'. Aborting task.")
             try:
-                await update_generated_list_metadata(list_firestore_id, {"status": "error", "admin_notes": "Failed to set status to 'generating' at task start (returned False)."})
+                await update_generated_list_metadata(list_firestore_id, {"status": "error", "admin_notes": "Failed to set status to 'generating' at task start."})
             except Exception as e_set_error_status_false:
                  logger.error(f"[_generate_and_update_list] Task {list_firestore_id}: Failed to set status to 'error' after initial update returned False: {e_set_error_status_false}")
             return # Stop further processing for this task
 
-        logger.debug(f"[_generate_and_update_list] Task {list_firestore_id}: About to call generate_word_list.")
-        logger.debug(f"[_generate_and_update_list] input_params: {input_params.model_dump_json(indent=2)}")
-        logger.debug(f"[_generate_and_update_list] prompt_text (first 500 chars): {prompt_text[:500]}")
+        # logger.debug(f"[_generate_and_update_list] Task {list_firestore_id}: About to call generate_word_list.") # Informative but can be verbose
+        # logger.debug(f"[_generate_and_update_list] input_params: {input_params.model_dump_json(indent=2)}") # Very verbose
+        # logger.debug(f"[_generate_and_update_list] prompt_text (first 500 chars): {prompt_text[:500]}") # Verbose, prompt logged by llm_client
 
         # Call LLM
-        # Pass the final_prompt_text_sent which is already available in this function's scope
-        llm_response = await generate_word_list(input_params, prompt_text) 
+        llm_response = await generate_word_list(input_params, prompt_text)
         
-        logger.debug(f"[_generate_and_update_list] llm_response from generate_word_list: {type(llm_response)}")
-        if isinstance(llm_response, list):
-            logger.debug(f"[_generate_and_update_list] llm_response item count: {len(llm_response)}")
-        elif isinstance(llm_response, dict):
-            logger.debug(f"[_generate_and_update_list] llm_response dict: {llm_response}")
-
+        # logger.debug(f"[_generate_and_update_list] llm_response from generate_word_list: type={type(llm_response)}") # Type is useful
+        # if isinstance(llm_response, list):
+            # logger.debug(f"[_generate_and_update_list] llm_response item count: {len(llm_response)}")
+        # elif isinstance(llm_response, dict):
+            # logger.debug(f"[_generate_and_update_list] llm_response dict: {llm_response}") # Useful if error
 
         # Check if LLM call returned an error dict
         if isinstance(llm_response, dict) and 'error' in llm_response:

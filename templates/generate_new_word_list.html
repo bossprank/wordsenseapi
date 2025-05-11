@@ -178,5 +178,5 @@
 </div>
 
 {# Include necessary JS file #}
-<script src="{{ url_for('static', filename='generate_new_word_list.js') }}"></script> 
+<script src="{{ request.url_for('static', path='generate_new_word_list.js') }}?v={{ APP_VERSION }}-{{ BUILD_NUMBER }}"></script>
 {% endblock %}

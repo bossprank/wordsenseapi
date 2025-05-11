@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
         configKeyInput.disabled = true;
 
         // Fetch existing config data for editing
-        fetch(`/api/language-pair-configurations/${configId}`)
+        fetch(`/api/language-pairs/${configId}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to fetch configuration details');
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
         const method = (formMode === 'edit') ? 'PUT' : 'POST';
-        const url = (formMode === 'edit' && configId) ? `/api/language-pair-configurations/${configId}` : '/api/language-pair-configurations';
+        const url = (formMode === 'edit' && configId) ? `/api/language-pairs/${configId}` : '/api/language-pairs';
 
         // For 'add' mode (POST), the payload should not contain an 'id' field.
         // The LanguagePairConfiguration model has 'id' as Optional, so it's fine if not present.

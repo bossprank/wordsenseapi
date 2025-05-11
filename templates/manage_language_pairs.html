@@ -6,14 +6,14 @@
     <!-- Breadcrumb Navigation -->
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('html.index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ request.url_for('route_index') }}">Home</a></li>
         <li class="breadcrumb-item active" aria-current="page">Manage Language Pair Configurations</li>
       </ol>
     </nav>
 
     <div class="actions-section">
         <button id="add-config-button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add New Configuration</button>
-        <button type="button" id="cancel-button" class="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-600" data-url="{{ url_for('html.manage_language_pairs') }}">Cancel</button>
+        <button type="button" id="cancel-button" class="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-600" data-url="{{ request.url_for('route_manage_language_pairs_page') }}">Cancel</button>
     </div>
 
     <div id="config-table-container" style="overflow-x: auto; width: 100%;">
@@ -47,6 +47,6 @@
             }
         });
     </script>
-    <script src="{{ url_for('static', filename='language_pair_manager.js') }}"></script>
+    <script src="{{ request.url_for('static', path='language_pair_manager.js') }}"></script>
     <p style="font-size: smaller;">Screen: Manage Language Pair Configurations Screen | Version: 1.0</p>
 {% endblock %}

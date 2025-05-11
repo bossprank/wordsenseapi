@@ -5,13 +5,13 @@
   <h1>WordSense Application</h1>
   <p>Welcome!</p>
   <p>
-    <button class="btn btn-primary navigate-btn" data-url="{{ url_for('html.manage_categories') }}">Manage Vocabulary Categories</button>
+    <button class="btn btn-primary navigate-btn" data-url="{{ request.url_for('route_manage_categories_page') }}">Manage Vocabulary Categories</button>
   </p>
   <p>
-    <button class="btn btn-primary navigate-btn" data-url="{{ url_for('html.manage_language_pairs') }}">Manage Language Pair Configurations</button>
+    <button class="btn btn-primary navigate-btn" data-url="{{ request.url_for('route_manage_language_pairs_page') }}">Manage Language Pair Configurations</button>
   </p>
   <p>
-    <button class="btn btn-primary navigate-btn" data-url="{{ url_for('html.view_generated_word_lists') }}">View Generated Vocabulary Lists</button>
+    <button class="btn btn-primary navigate-btn" data-url="{{ request.url_for('route_view_generated_lists_page') }}">View Generated Vocabulary Lists</button>
   </p>
 {% endblock %}
 

@@ -3,8 +3,8 @@
 {% block content %}
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('html.index') }}">Home</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('html.manage_language_pairs') }}">Manage Language Pair Configurations</a></li>
+        <li class="breadcrumb-item"><a href="{{ request.url_for('route_index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ request.url_for('route_manage_language_pairs_page') }}">Manage Language Pair Configurations</a></li>
         <li class="breadcrumb-item active" aria-current="page">{{ 'Add New' if is_new else 'Edit Configuration' }}</li>
       </ol>
     </nav>
@@ -79,7 +79,7 @@
 
             <div class="form-actions">
                 <button type="submit" id="save-button" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save Configuration</button>
-                <button type="button" id="cancel-button" class="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-600" style="padding: 0.5rem 1rem; font-size: 1rem;" data-url="{{ url_for('html.manage_language_pairs') }}" onclick="navigateTo(this.dataset.url)">Cancel</button>
+                <button type="button" id="cancel-button" class="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-600" style="padding: 0.5rem 1rem; font-size: 1rem;" data-url="{{ request.url_for('route_manage_language_pairs_page') }}" onclick="navigateTo(this.dataset.url)">Cancel</button>
             </div>
         </form>
     </div>
@@ -89,7 +89,7 @@
             window.location.href = url;
         }
     </script>
-    <script src="{{ url_for('static', filename='language_pair_config_detail.js') }}"></script>
+    <script src="{{ request.url_for('static', path='language_pair_config_detail.js') }}"></script>
     <footer class="bg-gray-100 text-center text-xs text-gray-600 py-2 fixed bottom-0 w-full">
       Version: 1.0.0 | Build: 4
     </footer>

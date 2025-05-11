@@ -21,7 +21,12 @@
         "editor.action.clipboardPasteAction" 
     ]
     // Add other macros here if you have them
-}
+},
+"python.testing.pytestArgs": [
+    "tests"
+],
+"python.testing.unittestEnabled": false,
+"python.testing.pytestEnabled": true
 
 }
 

@@ -327,6 +327,7 @@ class GeneratedWordListParameters(BaseModel):
     """Parameters used for generating a vocabulary list."""
     model_config = ConfigDict(extra='forbid', populate_by_name=True)
 
+    provider: Optional[str] = Field(default=None, description="LLM provider used (e.g., 'googleai', 'deepseek'). Copied from GenerateListInput.") # Added field
     list_readable_id: str = Field(..., description="Backend-generated, unique, human-readable ID.")
     status: str = Field(..., description="Workflow status of the list.") # Consider Enum later
     language: str = Field(..., description="Target language code.") # Consider Language Literal
@@ -450,6 +451,7 @@ class GenerateListInput(BaseModel):
     """Input payload structure for the POST /api/v1/generated-lists endpoint."""
     model_config = ConfigDict(extra='forbid')
 
+    provider: Optional[str] = Field(default=None, description="LLM provider to use (e.g., 'googleai', 'deepseek'). Defaults to system config if None.")
     language: str = Field(..., description="Target language code.")
     cefr_level: str = Field(..., description="Selected CEFR level.")
     requested_word_count: int = Field(..., description="The number of words initially requested.")

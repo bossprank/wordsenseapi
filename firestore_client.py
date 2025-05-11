@@ -34,39 +34,8 @@ except ImportError:
     sys.exit(1)
 
 # --- Firestore Client Management ---
-
-async def get_db_client() -> AsyncClient:
-    """
-    Creates and returns a new Firestore AsyncClient instance.
-    NOTE: This approach creates a new client per call, which is safer for avoiding
-    event loop issues in some ASGI/Flask setups but may be less performant than
-    a carefully managed shared client.
-    """
-    if not GCLOUD_PROJECT:
-        logger.critical("CRITICAL ERROR: GCLOUD_PROJECT not set. Cannot initialize Firestore client.")
-        raise EnvironmentError("GCLOUD_PROJECT not set, cannot create Firestore client.")
-    try:
-        loop = asyncio.get_running_loop()
-        logger.debug(f"firestore_client.get_db_client: Using event loop {loop}")
-        client = AsyncClient(project=GCLOUD_PROJECT, database=FIRESTORE_DATABASE_ID or '(default)', client_options={'api_endpoint': None}, transport=None, loop=loop)
-        logger.debug("firestore_client.get_db_client: New Firestore AsyncClient instance created successfully for this call, with explicit loop.")
-        return client
-    except RuntimeError as e:
-        if "no current event loop" in str(e).lower():
-            logger.error(f"firestore_client.get_db_client: No current event loop found! Falling back to AsyncClient without explicit loop. Error: {e}")
-            # Fallback if no loop is running (e.g. some script contexts) - though in ASGI app, a loop should exist.
-            client = AsyncClient(project=GCLOUD_PROJECT, database=FIRESTORE_DATABASE_ID or '(default)')
-            logger.debug("firestore_client.get_db_client: New Firestore AsyncClient instance created (fallback, no explicit loop).")
-            return client
-        else:
-            logger.critical(f"CRITICAL ERROR: RuntimeError when trying to get event loop for Firestore AsyncClient: {e}")
-            raise
-    except google_exceptions.PermissionDenied:
-        logger.critical("CRITICAL ERROR: Permission denied connecting to Firestore."); logger.critical("Ensure ADC/Service Account have Firestore roles.")
-        raise
-    except Exception as e:
-        logger.critical(f"CRITICAL ERROR: Failed to initialize Firestore AsyncClient: {e}")
-        raise
+# The get_db_client() function is removed.
+# AsyncClient instances will be passed into functions that need them.
 
 WORDS_COLLECTION = 'words'
 GENERATED_WORD_LISTS_COLLECTION = 'GeneratedWordLists'
@@ -86,10 +55,10 @@ def _convert_complex_types_to_firestore(data: Any) -> Any:
         return data
 
 # --- Test Function ---
-async def test_firestore_connection():
+async def test_firestore_connection(db: AsyncClient): # db instance is now passed
     """Attempts a simple read operation to verify the connection."""
     try:
-        db = await get_db_client(); logger.info("Testing Firestore connection...")
+        logger.info("Testing Firestore connection...")
         doc_ref = db.collection(WORDS_COLLECTION).document('__test_connection__'); _ = await doc_ref.get()
         logger.info("Firestore connection test successful."); print("Firestore connection test successful.")
         return True
@@ -98,13 +67,13 @@ async def test_firestore_connection():
 
 # --- CRUD Operations (Now using AsyncClient) ---
 
-async def get_word_by_id(word_id: str) -> Optional[Word]:
+async def get_word_by_id(db: AsyncClient, word_id: str) -> Optional[Word]: # db instance is now passed
     """Fetches a single Word document from Firestore by its ID."""
     try:
-        db = await get_db_client(); logger.info(f"Attempting to fetch word with ID: {word_id}")
+        logger.info(f"Attempting to fetch word with ID: {word_id}")
         doc_ref = db.collection(WORDS_COLLECTION).document(word_id); doc_snapshot = await doc_ref.get()
         if doc_snapshot.exists:
-            logger.debug(f"Document found for ID: {word_id}")
+            # logger.debug(f"Document found for ID: {word_id}")
             try:
                 word_data = doc_snapshot.to_dict()
                 if word_data is None: logger.warning(f"Document {word_id} exists but contains no data."); return None
@@ -117,11 +86,11 @@ async def get_word_by_id(word_id: str) -> Optional[Word]:
     except google_exceptions.PermissionDenied: logger.error(f"Permission denied fetching word ID {word_id}."); return None
     except Exception as e: logger.exception(f"Error fetching word ID {word_id} from Firestore:"); return None
 
-async def save_word(word: Word) -> Optional[Word]:
+async def save_word(db: AsyncClient, word: Word) -> Optional[Word]: # Added db param
     """Saves (creates or updates) a Word document in Firestore."""
     word_id_str = ""
     try:
-        db = await get_db_client()
+        # db instance is now passed
         word_id_str = str(word.word_id)
         logger.info(f"Attempting to save word with ID: {word_id_str}")
         data_to_save_dict = word.model_dump(
@@ -136,19 +105,19 @@ async def save_word(word: Word) -> Optional[Word]:
         doc_snapshot = await doc_ref.get()
         server_timestamp = SERVER_TIMESTAMP
         if doc_snapshot.exists:
-            logger.debug(f"Document {word_id_str} exists, updating...")
+            # logger.debug(f"Document {word_id_str} exists, updating...")
             data_to_save_firestore['updated_at'] = server_timestamp
-            if 'created_at' in data_to_save_firestore: del data_to_save_firestore['created_at']
+            if 'created_at' in data_to_save_firestore: del data_to_save_firestore['created_at'] # Should not happen if exclude is working
             await doc_ref.update(data_to_save_firestore)
             logger.info(f"Word document {word_id_str} updated successfully.")
         else:
-            logger.debug(f"Document {word_id_str} does not exist, creating...")
+            # logger.debug(f"Document {word_id_str} does not exist, creating...")
             data_to_save_firestore['created_at'] = server_timestamp
             data_to_save_firestore['updated_at'] = server_timestamp
             await doc_ref.set(data_to_save_firestore)
             logger.info(f"Word document {word_id_str} created successfully.")
-        logger.debug(f"Fetching word {word_id_str} back after save...")
-        saved_word_data = await get_word_by_id(word_id_str)
+        # logger.debug(f"Fetching word {word_id_str} back after save...") # Can be verbose, implies another DB call
+        saved_word_data = await get_word_by_id(db, word_id_str) # Pass db, This re-fetches, consider if necessary or return constructed
         return saved_word_data
     except ValidationError as e:
          logger.error(f"Pydantic validation error during save preparation (ID: {word_id_str}): {e}")
@@ -168,18 +137,19 @@ async def save_word(word: Word) -> Optional[Word]:
         logger.exception(f"Error saving word document {word_id_str} to Firestore:")
         return None
 
-async def search_words(query: str, language: str, limit: int = 50) -> List[Word]:
+async def search_words(db: AsyncClient, query: str, language: str, limit: int = 50) -> List[Word]:
     """Searches for words based on headword prefix and language."""
     words: List[Word] = []
     try:
-        db = await get_db_client(); logger.info(f"Searching words: q='{query}', lang='{language}', limit={limit}")
+        # db instance is now passed
+        logger.info(f"Searching words: q='{query}', lang='{language}', limit={limit}")
         end_query = query + '\uf8ff'; query_ref = db.collection(WORDS_COLLECTION).where(filter=FieldFilter('language', '==', language)).where(filter=FieldFilter('headword', '>=', query)).where(filter=FieldFilter('headword', '<', end_query)).limit(limit)
         async for doc_snapshot in query_ref.stream():
             try:
                 word_data = doc_snapshot.to_dict()
-                if word_data is None: logger.warning(f"Skipping doc {doc_snapshot.id}: no data."); continue
+                if word_data is None: logger.warning(f"Skipping doc {doc_snapshot.id} in search results: no data."); continue
                 word_data['word_id'] = doc_snapshot.id; word = Word.model_validate(word_data)
-                words.append(word); logger.debug(f"Validated word {doc_snapshot.id} from search.")
+                words.append(word) # logger.debug(f"Validated word {doc_snapshot.id} from search.") # Verbose per item
             except ValidationError as e: logger.warning(f"Skipping word {doc_snapshot.id} during search (validation error): {e}")
             except Exception as e: logger.error(f"Error processing doc {doc_snapshot.id} during search: {e}")
         logger.info(f"Found {len(words)} words matching search.")
@@ -191,9 +161,14 @@ async def search_words(query: str, language: str, limit: int = 50) -> List[Word]
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     async def run_tests():
-        print("\n--- Running Firestore Client Tests ---"); connected = await test_firestore_connection()
-        if connected:
-            print("\nAttempting search..."); search_results = await search_words(query="test", language="en", limit=5); print(f"Search returned {len(search_results)} words.")
+        # This test will require a db client instance to be created and passed
+        # For standalone testing, one might do:
+        # test_db_client = AsyncClient(project=GCLOUD_PROJECT, database=FIRESTORE_DATABASE_ID or '(default)')
+        # print("\n--- Running Firestore Client Tests ---"); connected = await test_firestore_connection(test_db_client)
+        # if connected:
+        #     print("\nAttempting search..."); search_results = await search_words(test_db_client, query="test", language="en", limit=5); print(f"Search returned {len(search_results)} words.")
+        # if hasattr(test_db_client, 'close'): await test_db_client.close()
+        print("Standalone tests need refactoring to create and pass an AsyncClient instance.")
         print("\n--- Firestore Client Tests Complete ---")
     try: asyncio.run(run_tests())
     except RuntimeError as e:
@@ -202,38 +177,63 @@ if __name__ == '__main__':
 
 # --- CRUD Operations for GeneratedWordLists ---
 
-async def save_generated_list(list_data: GeneratedWordList) -> Optional[GeneratedWordList]:
-    """Saves a new GeneratedWordList document in Firestore.
-    Assumes list_firestore_id is None for new documents and will be auto-generated.
+async def save_generated_list(db: AsyncClient, list_data: GeneratedWordList) -> Optional[GeneratedWordList]: # Added db param
+    """Saves (creates or updates) a GeneratedWordList document in Firestore.
+    If list_data.list_firestore_id is None, a new document is created.
+    Otherwise, the existing document with that ID is overwritten/updated.
     """
     try:
-        db = await get_db_client()
+        # db instance is now passed
+        
+        doc_id = list_data.list_firestore_id
+        is_new_document = not doc_id
+
         data_to_save = list_data.model_dump(
             mode='json',
-            exclude={'list_firestore_id', 'generation_parameters.generation_timestamp', 'generation_parameters.last_status_update_timestamp'},
+            exclude={'list_firestore_id'}, # list_firestore_id is path, not field
             exclude_none=True
         )
-        data_to_save['generation_parameters']['generation_timestamp'] = SERVER_TIMESTAMP
-        data_to_save['generation_parameters']['last_status_update_timestamp'] = SERVER_TIMESTAMP
-        logger.info(f"Attempting to create new generated word list with readable_id: {list_data.generation_parameters.list_readable_id}")
-        doc_ref = db.collection(GENERATED_WORD_LISTS_COLLECTION).document()
-        await doc_ref.set(data_to_save)
-        logger.info(f"New generated word list created successfully with Firestore ID: {doc_ref.id}")
+        
+        # Ensure timestamps are handled correctly for new vs. update
+        if is_new_document:
+            data_to_save['generation_parameters']['generation_timestamp'] = SERVER_TIMESTAMP
+            data_to_save['generation_parameters']['last_status_update_timestamp'] = SERVER_TIMESTAMP
+            logger.info(f"Attempting to create new generated word list with readable_id: {list_data.generation_parameters.list_readable_id}")
+            doc_ref = db.collection(GENERATED_WORD_LISTS_COLLECTION).document() # New ID
+        else:
+            # For updates, we only update last_status_update_timestamp.
+            # generation_timestamp should remain from the original creation.
+            # We also need to ensure we don't overwrite existing generation_timestamp if it's not in data_to_save.
+            # model_dump by default includes all fields, so generation_timestamp from the loaded current_list will be there.
+            data_to_save['generation_parameters']['last_status_update_timestamp'] = SERVER_TIMESTAMP
+            if 'generation_timestamp' not in data_to_save['generation_parameters'] and current_list: # Should not happen if current_list is loaded
+                 data_to_save['generation_parameters']['generation_timestamp'] = current_list.generation_parameters.generation_timestamp
+
+            logger.info(f"Attempting to update generated word list with Firestore ID: {doc_id}")
+            doc_ref = db.collection(GENERATED_WORD_LISTS_COLLECTION).document(doc_id)
+
+        await doc_ref.set(data_to_save, merge=not is_new_document) # Use merge=True for updates to not overwrite everything if only partial data is sent
+                                                              # However, we are sending the full list_data model, so merge=False (overwrite) for new,
+                                                              # and set (which overwrites) for existing is fine.
+                                                              # Using .set with merge=True for updates is safer if we ever send partial updates.
+                                                              # For now, assuming full object overwrite on update.
+        
+        logger.info(f"Generated word list '{doc_ref.id}' (readable: {list_data.generation_parameters.list_readable_id}) saved successfully.")
+        
+        # Fetch the document back to ensure it's correctly saved and to get server-generated timestamps
         saved_doc_snapshot = await doc_ref.get()
         if saved_doc_snapshot.exists:
             saved_data_dict = saved_doc_snapshot.to_dict()
             if saved_data_dict:
-                saved_data_dict['list_firestore_id'] = doc_ref.id
+                saved_data_dict['list_firestore_id'] = doc_ref.id # Ensure ID is part of the model data
                 validated_saved_list = GeneratedWordList.model_validate(saved_data_dict)
                 return validated_saved_list
-            else:
-                logger.error(f"Failed to retrieve data for new list {doc_ref.id} immediately after creation (to_dict was None).")
-                return None
-        else:
-            logger.error(f"Failed to fetch new list {doc_ref.id} immediately after creation.")
-            return None
+        
+        logger.error(f"Failed to retrieve or validate list {doc_ref.id} immediately after saving.")
+        return None
+
     except ValidationError as e:
-         logger.error(f"Pydantic validation error during save preparation for generated list: {e}")
+         logger.error(f"Pydantic validation error during save preparation for generated list ({list_data.generation_parameters.list_readable_id if list_data and list_data.generation_parameters else 'Unknown'}): {e}")
          return None
     except TypeError as te:
          logger.error(f"TypeError during Firestore save operation for generated list: {te}")
@@ -245,12 +245,12 @@ async def save_generated_list(list_data: GeneratedWordList) -> Optional[Generate
         logger.exception(f"Error saving generated list document to Firestore:")
         return None
 
-async def get_generated_list_by_id(list_firestore_id: str) -> Optional[GeneratedWordList]:
+async def get_generated_list_by_id(db: AsyncClient, list_firestore_id: str) -> Optional[GeneratedWordList]: # Added db param
     """Fetches a single GeneratedWordList document from Firestore by its ID."""
     try:
-        db = await get_db_client()
+        # db instance is now passed
         logger.info(f"Attempting to fetch generated list with Firestore ID: {list_firestore_id}")
-        doc_ref = db.collection(GENERATED_WORD_LISTS_COLLECTION).document(list_firestore_id)
+        doc_ref = db.collection(GENERATED_WORD_LISTS_COLLECTION).document(list_firestore_id) # db already used
         doc_snapshot = await doc_ref.get()
         if doc_snapshot.exists:
             list_data_dict = doc_snapshot.to_dict()
@@ -275,7 +275,8 @@ async def get_generated_list_by_id(list_firestore_id: str) -> Optional[Generated
         logger.exception(f"Error fetching generated list ID {list_firestore_id} from Firestore:")
         return None
 
-async def get_all_generated_lists(
+async def get_all_generated_lists( # Added db param
+    db: AsyncClient,
     filters: Optional[Dict[str, Any]] = None,
     sort_by: Optional[str] = "generation_parameters.generation_timestamp",
     sort_direction: str = "DESCENDING",
@@ -285,13 +286,13 @@ async def get_all_generated_lists(
     """Fetches a paginated and filtered list of generated word list summaries."""
     summaries: List[GeneratedWordListSummary] = []
     try:
-        db = await get_db_client()
-        all_categories = await get_master_categories()
+        # db instance is now passed
+        all_categories = await get_master_categories(db) # Pass db to nested call
         category_lookup = {cat.category_id: cat.display_name.get('en', cat.category_id) for cat in all_categories}
-        logger.debug(f"Category lookup created with {len(category_lookup)} entries.")
+        # logger.debug(f"Category lookup created with {len(category_lookup)} entries.")
         query = db.collection(GENERATED_WORD_LISTS_COLLECTION)
         if filters:
-            logger.info(f"Applying filters: {filters}")
+            logger.info(f"Applying filters to generated lists: {filters}")
             filter_map = {
                 "language": "generation_parameters.language",
                 "cefr_level": "generation_parameters.cefr_level",
@@ -302,20 +303,20 @@ async def get_all_generated_lists(
                 if key in filter_map and value:
                     firestore_field = filter_map[key]
                     query = query.where(filter=FieldFilter(firestore_field, "==", value))
-                    logger.debug(f"Applied filter: {firestore_field} == {value}")
+                    # logger.debug(f"Applied filter: {firestore_field} == {value}")
         if sort_by:
             direction = sort_direction
-            logger.debug(f"Applying sort: {sort_by} {direction}")
+            # logger.debug(f"Applying sort: {sort_by} {direction}")
             query = query.order_by(sort_by, direction=direction)
-        else:
+        else: # Default sort
              query = query.order_by("generation_parameters.generation_timestamp", direction="DESCENDING")
         if offset is not None and offset > 0:
-            logger.debug(f"Applying offset: {offset}")
+            # logger.debug(f"Applying offset: {offset}")
             query = query.offset(offset)
         if limit is not None and limit > 0:
-            logger.debug(f"Applying limit: {limit}")
+            # logger.debug(f"Applying limit: {limit}")
             query = query.limit(limit)
-        logger.info("Executing query to fetch generated list summaries...")
+        # logger.info("Executing query to fetch generated list summaries...") # Covered by the Fetched X summaries log
         stream = query.stream()
         async for doc_snapshot in stream:
             try:
@@ -325,9 +326,8 @@ async def get_all_generated_lists(
                     category_id = params.get('list_category_id')
                     display_name = category_lookup.get(category_id, category_id or "N/A")
                     gen_timestamp = params.get('generation_timestamp')
-                    if not isinstance(gen_timestamp, datetime):
-                         logger.warning(f"Skipping doc {doc_snapshot.id}: Invalid generation_timestamp type ({type(gen_timestamp)}).")
-                         continue
+                    # Pydantic will attempt to parse gen_timestamp to datetime for GeneratedWordListSummary
+                    # If it fails, the ValidationError below will catch it for this specific summary.
                     summary = GeneratedWordListSummary(
                         list_firestore_id=doc_snapshot.id,
                         list_readable_id=params.get('list_readable_id', 'N/A'),
@@ -354,11 +354,11 @@ async def get_all_generated_lists(
         logger.exception("Error fetching generated list summaries from Firestore:")
         return []
 
-async def update_generated_list_metadata(list_firestore_id: str, metadata_updates: Dict[str, Any]) -> bool:
+async def update_generated_list_metadata(db: AsyncClient, list_firestore_id: str, metadata_updates: Dict[str, Any]) -> bool: # Added db param
     """Updates specific metadata fields of an existing GeneratedWordList document."""
     try:
-        db = await get_db_client()
-        doc_ref = db.collection(GENERATED_WORD_LISTS_COLLECTION).document(list_firestore_id)
+        # db instance is now passed
+        doc_ref = db.collection(GENERATED_WORD_LISTS_COLLECTION).document(list_firestore_id) # db already used
         doc_snapshot = await doc_ref.get()
         if not doc_snapshot.exists:
             logger.warning(f"GeneratedWordList with ID '{list_firestore_id}' not found for update.")
@@ -385,11 +385,11 @@ async def update_generated_list_metadata(list_firestore_id: str, metadata_update
         logger.exception(f"[update_generated_list_metadata] Unexpected error updating metadata for list ID {list_firestore_id}:")
         return False
 
-async def delete_generated_list(list_firestore_id: str) -> bool:
+async def delete_generated_list(db: AsyncClient, list_firestore_id: str) -> bool: # Added db param
     """Deletes a GeneratedWordList document from Firestore."""
     try:
-        db = await get_db_client()
-        doc_ref = db.collection(GENERATED_WORD_LISTS_COLLECTION).document(list_firestore_id)
+        # db instance is now passed
+        doc_ref = db.collection(GENERATED_WORD_LISTS_COLLECTION).document(list_firestore_id) # db already used
         logger.info(f"Attempting to delete generated list ID: {list_firestore_id}")
         await doc_ref.delete()
         logger.info(f"Successfully deleted generated list ID: {list_firestore_id}")
@@ -403,13 +403,13 @@ async def delete_generated_list(list_firestore_id: str) -> bool:
 
 # --- CRUD Operations for MasterCategories ---
 
-async def get_master_categories() -> List[VocabularyCategory]:
+async def get_master_categories(db: AsyncClient) -> List[VocabularyCategory]:
     """Fetches all documents from the master_categories collection."""
     categories: List[VocabularyCategory] = []
     try:
-        db = await get_db_client()
-        logger.info(f"Attempting to fetch all master categories from '{MASTER_CATEGORIES_COLLECTION}'")
-        query_stream = db.collection(MASTER_CATEGORIES_COLLECTION).stream()
+        # db instance is now passed
+        logger.info(f"Attempting to fetch all master categories from '{MASTER_CATEGORIES_COLLECTION}' using provided db client.")
+        query_stream = db.collection(MASTER_CATEGORIES_COLLECTION).stream() # db already used
         async for doc_snapshot in query_stream:
             try:
                 category_data = doc_snapshot.to_dict()
@@ -432,12 +432,12 @@ async def get_master_categories() -> List[VocabularyCategory]:
         logger.exception("Error fetching master categories from Firestore:")
         return []
 
-async def add_master_category(category_data: VocabularyCategory) -> Optional[VocabularyCategory]:
+async def add_master_category(db: AsyncClient, category_data: VocabularyCategory) -> Optional[VocabularyCategory]:
     """Saves a new VocabularyCategory document in Firestore.
     The category_id from the input model is used as the document ID.
     """
     try:
-        db = await get_db_client()
+        # db instance is now passed
         category_id = category_data.category_id
         logger.info(f"Attempting to add master category with ID: {category_id}")
         data_to_save = category_data.model_dump(
@@ -476,12 +476,12 @@ async def add_master_category(category_data: VocabularyCategory) -> Optional[Voc
         logger.exception(f"Error saving category document '{category_data.category_id if category_data else 'UNKNOWN'}' to Firestore:")
         return None
 
-async def update_master_category(category_id: str, updates: Dict[str, Any]) -> Optional[VocabularyCategory]:
+async def update_master_category(db: AsyncClient, category_id: str, updates: Dict[str, Any]) -> Optional[VocabularyCategory]:
     """Updates an existing VocabularyCategory document in Firestore.
     Only fields present in the 'updates' dict will be modified.
     """
     try:
-        db = await get_db_client()
+        # db instance is now passed
         doc_ref = db.collection(MASTER_CATEGORIES_COLLECTION).document(category_id)
         doc_snapshot = await doc_ref.get()
         if not doc_snapshot.exists:
@@ -522,10 +522,10 @@ async def update_master_category(category_id: str, updates: Dict[str, Any]) -> O
         logger.exception(f"Error updating master category ID {category_id}:")
         return None
 
-async def delete_master_category(category_id: str) -> bool:
+async def delete_master_category(db: AsyncClient, category_id: str) -> bool:
     """Deletes a VocabularyCategory document from Firestore by its ID."""
     try:
-        db = await get_db_client()
+        # db instance is now passed
         doc_ref = db.collection(MASTER_CATEGORIES_COLLECTION).document(category_id)
         logger.info(f"Attempting to delete master category ID: {category_id}")
         await doc_ref.delete()
@@ -540,12 +540,12 @@ async def delete_master_category(category_id: str) -> bool:
 
 # --- CRUD Operations for LanguagePairConfigurations ---
 
-async def add_language_pair_configuration(config_data: LanguagePairConfiguration) -> Optional[LanguagePairConfiguration]:
+async def add_language_pair_configuration(db: AsyncClient, config_data: LanguagePairConfiguration) -> Optional[LanguagePairConfiguration]:
     """Saves a new LanguagePairConfiguration document in Firestore.
     A new Firestore document ID will be auto-generated.
     """
     try:
-        db = await get_db_client()
+        # db instance is now passed
         logger.info(f"Attempting to add new language pair configuration for: {config_data.language_pair} - {config_data.config_key}")
         data_to_save = config_data.model_dump(
             mode='json',
@@ -580,14 +580,14 @@ async def add_language_pair_configuration(config_data: LanguagePairConfiguration
         logger.exception(f"Error saving language pair configuration to Firestore:")
         return None
 
-async def get_language_pair_configurations(language_pair_filter: Optional[str] = None) -> List[LanguagePairConfiguration]:
+async def get_language_pair_configurations(db: AsyncClient, language_pair_filter: Optional[str] = None) -> List[LanguagePairConfiguration]:
     """Fetches LanguagePairConfiguration documents from Firestore.
     Optionally filters by the 'language_pair' field if language_pair_filter is provided.
     """
     configs: List[LanguagePairConfiguration] = []
     collection_name = 'LanguagePairConfigurations'
     try:
-        db = await get_db_client()
+        # db instance is now passed
         query = db.collection(collection_name)
         if language_pair_filter:
             logger.info(f"Fetching language pair configurations for '{language_pair_filter}' from '{collection_name}'")
@@ -618,11 +618,11 @@ async def get_language_pair_configurations(language_pair_filter: Optional[str] =
         logger.exception("Error fetching language pair configurations from Firestore:")
         return []
 
-async def update_language_pair_configuration(config_id: str, updates: Dict[str, Any]) -> Optional[LanguagePairConfiguration]:
+async def update_language_pair_configuration(db: AsyncClient, config_id: str, updates: Dict[str, Any]) -> Optional[LanguagePairConfiguration]:
     """Updates an existing LanguagePairConfiguration document in Firestore by its ID."""
     collection_name = 'LanguagePairConfigurations'
     try:
-        db = await get_db_client()
+        # db instance is now passed
         doc_ref = db.collection(collection_name).document(config_id)
         doc_snapshot = await doc_ref.get()
         if not doc_snapshot.exists:
@@ -663,11 +663,11 @@ async def update_language_pair_configuration(config_id: str, updates: Dict[str, 
         logger.exception(f"Error updating LanguagePairConfiguration ID {config_id}:")
         return None
 
-async def delete_language_pair_configuration(config_id: str) -> bool:
+async def delete_language_pair_configuration(db: AsyncClient, config_id: str) -> bool:
     """Deletes a LanguagePairConfiguration document from Firestore by its ID."""
     collection_name = 'LanguagePairConfigurations'
     try:
-        db = await get_db_client()
+        # db instance is now passed
         doc_ref = db.collection(collection_name).document(config_id)
         logger.info(f"Attempting to delete LanguagePairConfiguration ID: {config_id}")
         await doc_ref.delete()
@@ -680,10 +680,17 @@ async def delete_language_pair_configuration(config_id: str) -> bool:
         logger.exception(f"Error deleting LanguagePairConfiguration ID {config_id}:")
         return False
 
-async def save_word_list(db: firestore.Client, word_list: GeneratedWordList):
+async def save_word_list(db: AsyncClient, word_list: GeneratedWordList):
     # Implementation to save a word list to Firestore
-    pass
+    # This function seems to be a duplicate or older version of save_generated_list.
+    # Consider removing or consolidating if save_generated_list is the primary one.
+    logger.warning("save_word_list function called, may be deprecated. Consider using save_generated_list.")
+    # For now, let's delegate to save_generated_list if it's compatible
+    return await save_generated_list(db, word_list)
 
-async def get_word_list(db: firestore.Client, list_id: str) -> GeneratedWordList:
+async def get_word_list(db: AsyncClient, list_id: str) -> Optional[GeneratedWordList]:
     # Implementation to get a word list from Firestore by ID
-    pass
+    # This function seems to be a duplicate or older version of get_generated_list_by_id.
+    # Consider removing or consolidating.
+    logger.warning("get_word_list function called, may be deprecated. Consider using get_generated_list_by_id.")
+    return await get_generated_list_by_id(db, list_id)
